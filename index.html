@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TBSN — Devis & Factures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Charte TBSN groupe */
+  --navy:#0A1A33; --navy-2:#16305A; --ink:#111826; --muted:#5B6678;
+  --line:#E7E9EF; --line-2:#F1F2F6; --bg:#FFFFFF; --paper:#F6F7F9;
+  --orange:#FF5A1F; --orange-ink:#E94E15; --orange-soft:#FFEEE7;
+  --ok:#0E7A5A; --ok-soft:#E2F3EC; --warn:#B4531A; --warn-soft:#FBEADD;
+  --danger:#C0392B; --danger-soft:#FBE9E7;
+  /* couleurs métier (identiques au site) */
+  --c-logo:#1D4ED8; --c-print:#0E7490; --c-video:#7E22CE;
+  --c-photo:#A16207; --c-social:#BE185D; --c-drone:#334155;
+  --display:'Space Grotesk',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:14px; --r-lg:16px;
+  --shadow:0 1px 2px rgba(10,26,51,.05),0 10px 30px rgba(10,26,51,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:var(--body);font-size:14px}
+a{color:var(--orange)}
+::selection{background:var(--orange);color:#fff}
+.tnum{font-family:var(--display);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+
+/* ---------- Layout ---------- */
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.rail{background:var(--navy);color:#9FB0C9;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{padding:24px 22px 18px}
+.brand .wm{font-family:var(--display);font-weight:700;font-size:1.28rem;letter-spacing:.02em;color:#fff;line-height:1}
+.brand .wm span{color:var(--orange)}
+.brand .bs{font-size:10px;color:#5E7091;letter-spacing:.2em;text-transform:uppercase;margin-top:8px;font-weight:600}
+.nav{padding:8px 12px;display:flex;flex-direction:column;gap:2px;flex:1}
+.nav .lbl{font-family:var(--display);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#5E7091;padding:16px 10px 6px;font-weight:600}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:#A9B7CC;text-decoration:none;font-weight:500;font-size:13.5px;transition:.14s}
+.nav a svg{width:17px;height:17px;flex:none;opacity:.9}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.active{background:var(--orange);color:#fff;box-shadow:0 6px 18px rgba(255,90,31,.32)}
+.nav a.active svg{opacity:1}
+.rail-foot{padding:14px 14px 18px;border-top:1px solid rgba(255,255,255,.09);display:flex;flex-direction:column;gap:8px}
+.rail-foot .rf-btn{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.06);color:#C2CDDE;border:none;border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:500;width:100%;text-align:left;transition:.14s}
+.rail-foot .rf-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.rail-foot .rf-btn svg{width:15px;height:15px}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:26px 34px 0;gap:16px}
+.page-head h1{margin:0;font-family:var(--display);font-size:24px;font-weight:700;letter-spacing:-.02em;color:var(--navy)}
+.page-head .eyebrow{font-family:var(--display);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--orange);font-weight:600;margin-bottom:6px}
+.content{padding:22px 34px 64px}
+
+/* ---------- Boutons ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:var(--bg);color:var(--navy);padding:10px 18px;border-radius:999px;font-family:var(--display);font-weight:600;font-size:13px;transition:.15s;white-space:nowrap}
+.btn svg{width:15px;height:15px}
+.btn:hover{border-color:var(--muted);background:var(--paper)}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.primary:hover{background:var(--orange-ink);border-color:var(--orange-ink);transform:translateY(-1px);box-shadow:0 8px 22px rgba(255,90,31,.28)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--line-2)}
+.btn.sm{padding:7px 13px;font-size:12px}
+.btn.danger{color:var(--danger);border-color:transparent}
+.btn.danger:hover{background:var(--danger-soft);border-color:#EEC9C3}
+
+/* ---------- Cartes / tables ---------- */
+.card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.grid{display:grid;gap:16px}
+.stats{grid-template-columns:repeat(4,1fr)}
+.stat{padding:20px}
+.stat .k{font-family:var(--display);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.stat .v{font-family:var(--display);font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:9px;color:var(--navy)}
+.stat .v small{font-size:14px;color:var(--muted);font-weight:600}
+.stat .sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;font-family:var(--display);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line)}
+tbody td{padding:14px 16px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--paper)}
+.t-right{text-align:right}
+.doc-no{font-family:var(--display);font-weight:600;font-size:13px;color:var(--navy)}
+.cell-strong{font-weight:600;color:var(--navy)}
+.cell-sub{font-size:12px;color:var(--muted)}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-family:var(--display);font-size:11.5px;font-weight:600;line-height:1.4}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-grey{background:#EDEFF3;color:#697488}
+.b-blue{background:#E6EDFD;color:#1D4ED8}
+.b-green{background:var(--ok-soft);color:var(--ok)}
+.b-amber{background:var(--warn-soft);color:var(--warn)}
+.b-red{background:var(--danger-soft);color:var(--danger)}
+
+.rowActions{display:flex;gap:3px;justify-content:flex-end;opacity:.55;transition:.14s}
+tr:hover .rowActions{opacity:1}
+.iconbtn{border:none;background:transparent;padding:7px;border-radius:9px;color:var(--muted);display:inline-flex}
+.iconbtn:hover{background:var(--line-2);color:var(--navy)}
+.iconbtn svg{width:16px;height:16px}
+.iconbtn.danger:hover{background:var(--danger-soft);color:var(--danger)}
+
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.empty svg{width:36px;height:36px;opacity:.4;margin-bottom:12px;color:var(--navy)}
+.empty h3{font-family:var(--display);color:var(--navy);margin:0 0 4px;font-size:15px}
+
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:28px 0 12px}
+.section-title h2{font-family:var(--display);font-size:15px;font-weight:700;margin:0;letter-spacing:-.01em;color:var(--navy)}
+
+/* ---------- Formulaires ---------- */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-family:var(--display);font-size:12px;font-weight:600;color:var(--navy)}
+.field .hint{font-size:11.5px;color:var(--muted);font-weight:400;font-family:var(--body)}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=tel],select,textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);transition:.14s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft)}
+textarea{resize:vertical;min-height:70px;font-family:var(--body)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.form-grid .full{grid-column:1/-1}
+
+/* ---------- Editeur ---------- */
+.editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.panel{padding:22px}
+.panel h3{font-family:var(--display);margin:0 0 14px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.lineTable{width:100%;border-collapse:collapse;margin-top:4px}
+.lineTable th{font-family:var(--display);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 6px;font-weight:600}
+.lineTable td{padding:3px 4px;vertical-align:top}
+.lineTable input{padding:8px 9px;border-radius:9px}
+.lineTable .lt-desc{width:100%}
+.lineTable .lt-num input{text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums}
+.lineTable .lt-rm{width:30px}
+.addline{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.totbox{margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.totrow{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.totrow.big{font-family:var(--display);font-size:18px;font-weight:700;border-top:1px solid var(--line);padding-top:12px;margin-top:3px;color:var(--navy)}
+.totrow .tnum{font-weight:600}
+
+/* ---------- Feuille document ---------- */
+.sheetwrap{position:sticky;top:22px}
+.sheet{background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:44px 46px;font-size:12.5px;color:#23262E;font-family:var(--body)}
+.sheet .doc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:34px}
+.sheet .logo{max-width:160px;max-height:66px;object-fit:contain}
+.sheet .wordmark{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.02em;color:var(--navy)}
+.sheet .wordmark span{color:var(--orange)}
+.sheet .co-tag{color:var(--muted);font-size:11.5px;margin-top:3px}
+.sheet .co-lines{margin-top:10px;font-size:11.5px;color:#48505F;line-height:1.65}
+.sheet .doc-title{text-align:right}
+.sheet .doc-title .dt{font-family:var(--display);font-size:27px;font-weight:700;letter-spacing:.01em;text-transform:uppercase;color:var(--navy)}
+.sheet .doc-title .dn{font-family:var(--display);font-size:13px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.sheet .meta{display:flex;justify-content:space-between;gap:24px;margin-bottom:26px}
+.sheet .party{flex:1}
+.sheet .party .plbl{font-family:var(--display);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);font-weight:600;margin-bottom:6px}
+.sheet .party .pname{font-family:var(--display);font-weight:600;font-size:13px;color:var(--navy)}
+.sheet .party .plines{color:#48505F;line-height:1.65;font-size:11.5px;margin-top:3px}
+.sheet .datebox{text-align:right;font-size:11.5px;color:#48505F}
+.sheet .datebox b{color:var(--navy);font-family:var(--display);font-weight:600}
+.sheet table.doc-items{width:100%;border-collapse:collapse}
+.sheet table.doc-items th{background:var(--navy);color:#fff;font-family:var(--display);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:10px;text-align:left;font-weight:600}
+.sheet table.doc-items th:first-child{border-radius:7px 0 0 0}
+.sheet table.doc-items th:last-child{border-radius:0 7px 0 0}
+.sheet table.doc-items th.r,.sheet table.doc-items td.r{text-align:right}
+.sheet table.doc-items td{padding:11px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.sheet table.doc-items .d-name{font-family:var(--display);font-weight:600;color:var(--navy)}
+.sheet table.doc-items .d-desc{color:var(--muted);font-size:11px;margin-top:2px}
+.sheet table.doc-items td.r{font-family:var(--display);font-variant-numeric:tabular-nums}
+.sheet .sums{display:flex;justify-content:flex-end;margin-top:18px}
+.sheet .sums .sbox{width:60%;max-width:290px}
+.sheet .sums .srow{display:flex;justify-content:space-between;padding:6px 0;font-size:12px}
+.sheet .sums .srow .tnum{font-family:var(--display);font-variant-numeric:tabular-nums}
+.sheet .sums .stotal{display:flex;justify-content:space-between;margin-top:8px;padding:13px 14px;background:var(--orange-soft);border-radius:9px;font-family:var(--display);font-weight:700;font-size:16px;color:var(--orange-ink)}
+.sheet .sums .stotal .tnum{font-variant-numeric:tabular-nums}
+.sheet .tva-note{margin-top:16px;font-size:11px;color:#48505F;font-style:italic}
+.sheet .legal{margin-top:26px;padding-top:16px;border-top:1px solid var(--line-2);font-size:10px;color:var(--muted);line-height:1.65}
+.sheet .signbox{margin-top:24px;display:flex;justify-content:flex-end}
+.sheet .signbox .sb{width:240px;border:1.5px dashed var(--line);border-radius:9px;padding:13px 15px;font-size:11px;color:var(--muted)}
+.sheet .signbox .sb b{font-family:var(--display);color:var(--navy);display:block;margin-bottom:36px;font-size:11.5px}
+.sheet .foot{margin-top:22px;text-align:center;font-size:10px;color:var(--muted);border-top:1px solid var(--line-2);padding-top:12px;font-family:var(--display);letter-spacing:.02em}
+.sheet .notes{margin-top:16px;font-size:11.5px;color:#48505F;background:var(--paper);border:1px solid var(--line-2);border-radius:9px;padding:12px 14px}
+.sheet .notes b{color:var(--navy);font-family:var(--display)}
+
+/* ---------- Catalogue ---------- */
+.catgroup{margin-bottom:14px;overflow:hidden}
+.catgroup .ch{display:flex;align-items:center;gap:10px;padding:14px 16px;font-family:var(--display);font-weight:600;font-size:14px;color:var(--navy)}
+.catgroup .ch .dot{width:11px;height:11px;border-radius:50%}
+.catgroup .ch .cnt{font-size:11.5px;color:var(--muted);font-weight:500;font-family:var(--body)}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(10,26,51,.48);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:44px 16px;z-index:60;overflow:auto}
+.overlay.show{display:flex}
+.modal{background:var(--bg);border-radius:18px;box-shadow:0 30px 80px rgba(10,26,51,.32);width:100%;max-width:520px;animation:pop .16s ease}
+.modal.wide{max-width:620px}
+@keyframes pop{from{transform:translateY(10px);opacity:.5}to{transform:none;opacity:1}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--line)}
+.modal-head h3{font-family:var(--display);margin:0;font-size:16px;font-weight:700;color:var(--navy)}
+.modal-body{padding:22px 24px;max-height:66vh;overflow:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--line);background:var(--paper);border-radius:0 0 18px 18px}
+
+/* ---------- Toast ---------- */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:13px 20px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 14px 38px rgba(10,26,51,.34);opacity:0;pointer-events:none;transition:.24s;z-index:90;display:flex;align-items:center;gap:9px;font-family:var(--display)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:16px;height:16px;color:#4ADE80}
+
+.hstack{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mb0{margin-bottom:0}.mt16{margin-top:16px}.spacer{flex:1}
+select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radius:999px;width:auto}
+
+/* ---------- Impression ---------- */
+#print-root{position:fixed;left:-99999px;top:0}
+@media print{
+  body{background:#fff}
+  body > *:not(#print-root){display:none !important}
+  #print-root{position:static;left:auto}
+  #print-root .sheet{border:none;box-shadow:none;border-radius:0;padding:0}
+  @page{margin:16mm 14mm}
+}
+
+/* ---------- Responsive ---------- */
+@media(max-width:1080px){ .editor{grid-template-columns:1fr} .sheetwrap{position:static} .stats{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:760px){
+  .app{grid-template-columns:1fr}
+  .rail{position:fixed;bottom:0;top:auto;left:0;right:0;height:62px;flex-direction:row;z-index:50}
+  .brand,.rail-foot,.nav .lbl{display:none}
+  .nav{flex-direction:row;padding:0;justify-content:space-around;width:100%}
+  .nav a{flex-direction:column;gap:3px;font-size:9.5px;padding:8px 4px;border-radius:0}
+  .nav a span.navtext{font-size:9.5px}
+  .main{padding-bottom:74px}
+  .topbar,.content{padding-left:16px;padding-right:16px}
+  .form-grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr}
+  .sheet{padding:26px 22px}
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="wm">TBSN <span>groupe.</span></div>
+      <div class="bs">Devis &amp; Factures</div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="lbl">Pilotage</div>
+      <a data-view="dashboard" class="active">${''}</a>
+      <div class="lbl">Documents</div>
+      <a data-view="quotes"></a>
+      <a data-view="invoices"></a>
+      <div class="lbl">Référentiel</div>
+      <a data-view="clients"></a>
+      <a data-view="catalog"></a>
+      <a data-view="company"></a>
+    </nav>
+    <div class="rail-foot">
+      <button class="rf-btn" id="btnExport"></button>
+      <button class="rf-btn" id="btnImport"></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="page-head">
+        <div class="eyebrow" id="eyebrow">Tableau de bord</div>
+        <h1 id="pageTitle">Tableau de bord</h1>
+      </div>
+      <div id="pageActions" class="hstack"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<div id="print-root"></div>
+<input type="file" id="importFile" accept="application/json" style="display:none">
+
+<script>
+/* =========================================================
+   TBSN — Devis & Factures  (application autonome, hors-ligne)
+   Données stockées localement dans le navigateur.
+   ========================================================= */
+
+/* ---------- Icônes ---------- */
+const I = {
+  dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
+  quote:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+  invoice:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1.5L8 22l2-1.5L12 22l2-1.5L16 22l2-1.5L20 22V2l-2 1.5L16 2l-2 1.5L12 2l-2 1.5L8 2 6 3.5 4 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>',
+  clients:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  catalog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-4 10 4-10 4z"/><path d="M2 7v10l10 4 10-4V7"/><line x1="12" y1="11" x2="12" y2="21"/></svg>',
+  company:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14"/><line x1="10" y1="11" x2="10" y2="11.01"/><line x1="14" y1="11" x2="14" y2="11.01"/><line x1="10" y1="15" x2="10" y2="15.01"/><line x1="14" y1="15" x2="14" y2="15.01"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+  toInv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+  save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>',
+};
+const NAV = [
+  {v:'dashboard',t:'Tableau de bord',i:I.dash},
+  {v:'quotes',t:'Devis',i:I.quote},
+  {v:'invoices',t:'Factures',i:I.invoice},
+  {v:'clients',t:'Clients',i:I.clients},
+  {v:'catalog',t:'Catalogue',i:I.catalog},
+  {v:'company',t:'Mon entreprise',i:I.company},
+];
+
+/* ---------- Stockage (localStorage + repli mémoire) ---------- */
+const DB = {
+  key:'tbsn_facturation_v3', _mem:null,
+  load(){ try{ const r=localStorage.getItem(this.key); return r?JSON.parse(r):null; }catch(e){ return this._mem; } },
+  save(s){ try{ localStorage.setItem(this.key, JSON.stringify(s)); }catch(e){ this._mem=s; } }
+};
+
+/* ---------- Catalogue par défaut ---------- */
+const CATS = [
+  {id:'logo', name:'Logo / Identité visuelle', color:'#1D4ED8'},
+  {id:'print', name:'Print', color:'#0E7490'},
+  {id:'video', name:'Vidéo', color:'#7E22CE'},
+  {id:'photo', name:'Photo', color:'#A16207'},
+  {id:'social', name:'Réseaux sociaux', color:'#BE185D'},
+  {id:'drone', name:'Drone', color:'#334155'},
+];
+function defaultCatalog(){
+  const seed = [
+    ['logo','Création de logo','Recherches, propositions et fichiers finaux (vectoriel + web)',490,'forfait'],
+    ['logo','Charte graphique','Couleurs, typographies et règles d’usage',690,'forfait'],
+    ['logo','Déclinaison / refonte de logo','Modernisation ou adaptation d’un logo existant',290,'forfait'],
+    ['print','Carte de visite','Création + bon à tirer (hors impression)',90,'forfait'],
+    ['print','Flyer A5 recto/verso','Conception graphique',150,'forfait'],
+    ['print','Affiche A3 / A2','Conception graphique',180,'forfait'],
+    ['print','Plaquette / brochure','Mise en page, par page',60,'page'],
+    ['video','Vidéo courte réseaux sociaux','Format court, tournage + montage',450,'forfait'],
+    ['video','Film institutionnel','Tournage, montage, étalonnage',1200,'forfait'],
+    ['video','Journée de montage','Post-production, par jour',350,'jour'],
+    ['photo','Reportage photo — demi-journée','Prises de vue + retouches',250,'forfait'],
+    ['photo','Reportage photo — journée','Prises de vue + retouches',450,'jour'],
+    ['photo','Photo produit','Par visuel retouché',25,'unité'],
+    ['social','Community management mensuel','Gestion et publications, par mois',350,'mois'],
+    ['social','Pack de contenus','10 visuels adaptés aux réseaux',290,'forfait'],
+    ['social','Création de contenu','Visuel unique (story, post)',25,'unité'],
+    ['social','Reel / vidéo courte réseaux','Tournage + montage vertical',180,'forfait'],
+    ['drone','Prise de vue aérienne — demi-journée','Captation drone (télépilote certifié)',350,'forfait'],
+    ['drone','Captation drone + montage','Captation aérienne et montage',650,'forfait'],
+  ];
+  return seed.map((r,i)=>({id:'it'+(i+1)+'_'+Math.random().toString(36).slice(2,6),category:r[0],name:r[1],description:r[2],price:r[3],unit:r[4]}));
+}
+function defaultState(){
+  return {
+    company:{
+      name:'TBSN groupe', tagline:'Création graphique, vidéo, photo & drone',
+      address:'', zip:'', city:'Occitanie',
+      siret:'', ape:'', email:'tbsngroupe@gmail.com', phone:'06 33 10 85 32', website:'tbsngroupe.fr',
+      iban:'', bic:'', logo:'',
+      legalMention:'TVA non applicable, article 293 B du CGI.',
+      paymentTerms:'Paiement à 30 jours à compter de la date de facturation, par virement ou chèque.',
+      latePenalty:'En cas de retard de paiement : pénalités au taux de 3 fois le taux d’intérêt légal, et indemnité forfaitaire de 40 € pour frais de recouvrement (clients professionnels).',
+      quoteFooter:'Devis gratuit et sans engagement. À retourner daté et signé avec la mention « Bon pour accord ». Télépilote de drone certifié — Catégorie Ouverte A1/A3.'
+    },
+    clients:[], catalog:defaultCatalog(), quotes:[], invoices:[],
+    counters:{quote:0, invoice:0},
+    settings:{quoteValidityDays:30, invoiceDueDays:30}
+  };
+}
+let S = DB.load() || defaultState();
+function save(){ DB.save(S); }
+
+/* ---------- Utilitaires ---------- */
+const uid = (p='id')=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const eur = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'});
+const fmt = n=>eur.format(isFinite(n)?n:0);
+const todayISO = ()=>new Date().toISOString().slice(0,10);
+function addDays(iso,d){ const dt=new Date(iso+'T00:00:00'); dt.setDate(dt.getDate()+d); return dt.toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return '—'; const dt=new Date(iso+'T00:00:00'); return dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function nl2br(s){ return esc(s).replace(/\n/g,'<br>'); }
+function wordmarkHTML(name){ return esc(name||'').replace(/(groupe\.?)/i,'<span style="color:var(--orange)">$1</span>'); }
+function docTotals(doc){
+  const sub = (doc.lines||[]).reduce((a,l)=>a+(Number(l.qty)||0)*(Number(l.price)||0),0);
+  let rem = 0;
+  if(doc.discountType==='pct') rem = sub*(Number(doc.discount)||0)/100;
+  else rem = Number(doc.discount)||0;
+  rem = Math.min(rem, sub);
+  const total = Math.max(0, sub-rem);
+  return {sub, rem, total};
+}
+function clientById(id){ return S.clients.find(c=>c.id===id); }
+function catName(id){ const c=CATS.find(x=>x.id===id); return c?c.name:id; }
+function catColor(id){ const c=CATS.find(x=>x.id===id); return c?c.color:'#8A8F9C'; }
+
+/* ---------- Toast ---------- */
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=I.check+'<span>'+esc(msg)+'</span>';
+  t.classList.add('show'); clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ---------- Modal ---------- */
+const overlay=document.getElementById('overlay'), modalEl=document.getElementById('modal');
+function openModal(html){ modalEl.innerHTML=html; overlay.classList.add('show'); }
+function closeModal(){ overlay.classList.remove('show'); modalEl.innerHTML=''; }
+overlay.addEventListener('click',e=>{ if(e.target===overlay) closeModal(); });
+
+/* ---------- Navigation ---------- */
+let VIEW='dashboard';
+function buildNav(){
+  document.querySelectorAll('#nav a').forEach(a=>{
+    const v=a.dataset.view, d=NAV.find(n=>n.v===v);
+    a.innerHTML=d.i+'<span class="navtext">'+d.t+'</span>';
+    a.classList.toggle('active',v===VIEW);
+    a.onclick=e=>{e.preventDefault();go(v);};
+  });
+}
+function go(view,param){
+  VIEW=view; buildNav();
+  const d=NAV.find(n=>n.v===view);
+  document.getElementById('eyebrow').textContent = ({dashboard:'Pilotage',quotes:'Documents',invoices:'Documents',clients:'Référentiel',catalog:'Référentiel',company:'Référentiel'})[view]||'';
+  document.getElementById('pageTitle').textContent=d.t;
+  document.getElementById('pageActions').innerHTML='';
+  const c=document.getElementById('content'); c.innerHTML='';
+  window.scrollTo(0,0);
+  ({dashboard:renderDashboard,quotes:renderQuotes,invoices:renderInvoices,clients:renderClients,catalog:renderCatalog,company:renderCompany,editor:null})[view](c,param);
+}
+
+/* ========================================================= */
+/* DASHBOARD                                                  */
+/* ========================================================= */
+function invoiceStatus(inv){
+  if(inv.paid) return {k:'payée',cls:'b-green'};
+  if(inv.status==='brouillon') return {k:'brouillon',cls:'b-grey'};
+  if(inv.dueDate && inv.dueDate<todayISO()) return {k:'en retard',cls:'b-red'};
+  return {k:'envoyée',cls:'b-blue'};
+}
+function quoteStatus(q){
+  const m={brouillon:'b-grey','envoyé':'b-blue','accepté':'b-green','refusé':'b-red'};
+  return {k:q.status||'brouillon',cls:m[q.status]||'b-grey'};
+}
+function renderDashboard(c){
+  const invBilled=S.invoices.filter(i=>i.status!=='brouillon').reduce((a,i)=>a+docTotals(i).total,0);
+  const unpaid=S.invoices.filter(i=>!i.paid && i.status!=='brouillon').reduce((a,i)=>a+docTotals(i).total,0);
+  const unpaidN=S.invoices.filter(i=>!i.paid && i.status!=='brouillon').length;
+  const pendingQ=S.quotes.filter(q=>q.status==='envoyé').length;
+  const stats=[
+    {k:'Chiffre d’affaires facturé',v:fmt(invBilled),sub:S.invoices.length+' facture(s)'},
+    {k:'En attente de paiement',v:fmt(unpaid),sub:unpaidN+' facture(s) impayée(s)'},
+    {k:'Devis en attente',v:pendingQ,sub:'sur '+S.quotes.length+' devis'},
+    {k:'Clients',v:S.clients.length,sub:'au référentiel'},
+  ];
+  document.getElementById('pageActions').innerHTML=
+    '<button class="btn" id="qaDevis">'+I.quote+'Nouveau devis</button>'+
+    '<button class="btn primary" id="qaFact">'+I.plus+'Nouvelle facture</button>';
+  document.getElementById('qaDevis').onclick=()=>openEditor('quote');
+  document.getElementById('qaFact').onclick=()=>openEditor('invoice');
+
+  let html='<div class="grid stats">';
+  stats.forEach(s=>html+='<div class="card stat"><div class="k">'+s.k+'</div><div class="v">'+s.v+'</div><div class="sub">'+s.sub+'</div></div>');
+  html+='</div>';
+
+  const recentInv=[...S.invoices].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  const recentQ=[...S.quotes].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+
+  html+='<div class="section-title"><h2>Dernières factures</h2><a href="#" id="allInv">Tout voir</a></div>';
+  html+=recentInv.length?docTable(recentInv,'invoice'):emptyBlock(I.invoice,'Aucune facture','Créez votre première facture depuis le catalogue.');
+  html+='<div class="section-title"><h2>Derniers devis</h2><a href="#" id="allQ">Tout voir</a></div>';
+  html+=recentQ.length?docTable(recentQ,'quote'):emptyBlock(I.quote,'Aucun devis','Créez un devis et convertissez-le en facture en un clic.');
+  c.innerHTML=html;
+  document.getElementById('allInv').onclick=e=>{e.preventDefault();go('invoices');};
+  document.getElementById('allQ').onclick=e=>{e.preventDefault();go('quotes');};
+  wireDocTable(c);
+}
+function emptyBlock(icon,title,sub){
+  return '<div class="card empty">'+icon+'<h3>'+title+'</h3><div>'+sub+'</div></div>';
+}
+
+/* ---------- Table générique devis/factures ---------- */
+function docTable(list,type){
+  let h='<div class="card"><table><thead><tr><th>N°</th><th>Client</th><th>Date</th><th>Statut</th><th class="t-right">Montant</th><th></th></tr></thead><tbody>';
+  list.forEach(d=>{
+    const cl=clientById(d.clientId);
+    const st= type==='invoice'?invoiceStatus(d):quoteStatus(d);
+    const tot=docTotals(d).total;
+    h+='<tr data-id="'+d.id+'" data-type="'+type+'">'+
+      '<td><span class="doc-no">'+esc(d.number||'—')+'</span></td>'+
+      '<td><div class="cell-strong">'+esc(cl?cl.name:'—')+'</div></td>'+
+      '<td>'+fmtDate(d.date)+'</td>'+
+      '<td><span class="badge '+st.cls+'">'+st.k+'</span></td>'+
+      '<td class="t-right tnum cell-strong">'+fmt(tot)+'</td>'+
+      '<td><div class="rowActions">'+
+        '<button class="iconbtn act-edit" title="Ouvrir">'+I.edit+'</button>'+
+        '<button class="iconbtn act-print" title="Imprimer / PDF">'+I.print+'</button>'+
+        (type==='quote'?'<button class="iconbtn act-toinv" title="Transformer en facture">'+I.toInv+'</button>':'')+
+        '<button class="iconbtn act-dup" title="Dupliquer">'+I.copy+'</button>'+
+        '<button class="iconbtn danger act-del" title="Supprimer">'+I.trash+'</button>'+
+      '</div></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+function wireDocTable(scope){
+  scope.querySelectorAll('tr[data-id]').forEach(tr=>{
+    const id=tr.dataset.id, type=tr.dataset.type;
+    const q=sel=>tr.querySelector(sel);
+    if(q('.act-edit')) q('.act-edit').onclick=()=>openEditor(type,id);
+    if(q('.act-print')) q('.act-print').onclick=()=>printDoc(type,id);
+    if(q('.act-dup')) q('.act-dup').onclick=()=>duplicateDoc(type,id);
+    if(q('.act-del')) q('.act-del').onclick=()=>confirmDelete(type,id);
+    if(q('.act-toinv')) q('.act-toinv').onclick=()=>convertToInvoice(id);
+    tr.querySelectorAll('td').forEach((td,idx)=>{ if(idx<4) td.style.cursor='pointer', td.onclick=()=>openEditor(type,id); });
+  });
+}
+
+/* ========================================================= */
+/* LISTES DEVIS / FACTURES                                    */
+/* ========================================================= */
+function renderQuotes(c){
+  document.getElementById('pageActions').innerHTML='<button class="btn primary" id="newQ">'+I.plus+'Nouveau devis</button>';
+  document.getElementById('newQ').onclick=()=>openEditor('quote');
+  const list=[...S.quotes].sort((a,b)=>(b.number||'').localeCompare(a.number||''));
+  c.innerHTML=list.length?docTable(list,'quote'):emptyBlock(I.quote,'Aucun devis pour le moment','Cliquez sur « Nouveau devis » pour commencer.');
+  wireDocTable(c);
+}
+function renderInvoices(c){
+  document.getElementById('pageActions').innerHTML='<button class="btn primary" id="newI">'+I.plus+'Nouvelle facture</button>';
+  document.getElementById('newI').onclick=()=>openEditor('invoice');
+  const list=[...S.invoices].sort((a,b)=>(b.number||'').localeCompare(a.number||''));
+  c.innerHTML=list.length?docTable(list,'invoice'):emptyBlock(I.invoice,'Aucune facture pour le moment','Créez une facture, ou transformez un devis accepté.');
+  wireDocTable(c);
+}
+
+/* ========================================================= */
+/* EDITEUR DEVIS / FACTURE                                    */
+/* ========================================================= */
+let draft=null, draftType='quote', draftIsNew=true;
+function newNumber(type){
+  const y=new Date().getFullYear();
+  const n=(S.counters[type]||0)+1;
+  const pre=type==='quote'?'DEV':'FAC';
+  return pre+'-'+y+'-'+String(n).padStart(4,'0');
+}
+function openEditor(type,id){
+  draftType=type;
+  if(id){
+    const src=(type==='quote'?S.quotes:S.invoices).find(d=>d.id===id);
+    draft=JSON.parse(JSON.stringify(src)); draftIsNew=false;
+  }else{
+    draftIsNew=true;
+    draft={ id:uid(type), number:null, clientId:S.clients[0]?S.clients[0].id:'', date:todayISO(),
+      lines:[], discount:0, discountType:'eur', notes:'', status:'brouillon' };
+    if(type==='quote') draft.validUntil=addDays(todayISO(),S.settings.quoteValidityDays);
+    else { draft.dueDate=addDays(todayISO(),S.settings.invoiceDueDays); draft.paid=false; draft.paidDate=''; draft.serviceDate=todayISO(); }
+  }
+  VIEW='editor'; buildNav();
+  document.getElementById('eyebrow').textContent = type==='quote'?'Devis':'Facture';
+  document.getElementById('pageTitle').textContent = (draftIsNew?'Nouveau ':'')+(type==='quote'?'devis':'facture')+(draft.number?' · '+draft.number:'');
+  document.getElementById('pageActions').innerHTML=
+    '<button class="btn" id="edBack">'+I.back+'Retour</button>'+
+    '<button class="btn" id="edPrint">'+I.print+'Imprimer</button>'+
+    '<button class="btn primary" id="edSave">'+I.save+'Enregistrer</button>';
+  document.getElementById('edBack').onclick=()=>go(type==='quote'?'quotes':'invoices');
+  document.getElementById('edSave').onclick=saveDraft;
+  document.getElementById('edPrint').onclick=()=>{ if(saveDraft(true)) printDoc(type,draft.id); };
+  renderEditor();
+}
+function renderEditor(){
+  const c=document.getElementById('content');
+  const type=draftType;
+  const clientOpts=S.clients.map(cl=>'<option value="'+cl.id+'"'+(cl.id===draft.clientId?' selected':'')+'>'+esc(cl.name)+'</option>').join('');
+  let form='<div class="card panel">';
+  form+='<h3>Informations</h3><div class="form-grid">';
+  form+='<div class="field full"><label>Client</label><div class="hstack" style="flex-wrap:nowrap">'+
+        '<select id="f_client" style="flex:1">'+(clientOpts||'<option value="">— aucun client —</option>')+'</select>'+
+        '<button class="btn sm" id="f_newclient" style="flex:none">'+I.plus+'Nouveau</button></div></div>';
+  form+='<div class="field"><label>Date</label><input type="date" id="f_date" value="'+esc(draft.date)+'"></div>';
+  if(type==='quote'){
+    form+='<div class="field"><label>Valable jusqu’au</label><input type="date" id="f_valid" value="'+esc(draft.validUntil||'')+'"></div>';
+    form+='<div class="field full"><label>Statut</label><select id="f_status">'+
+      ['brouillon','envoyé','accepté','refusé'].map(s=>'<option'+(draft.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>';
+  }else{
+    form+='<div class="field"><label>Échéance</label><input type="date" id="f_due" value="'+esc(draft.dueDate||'')+'"></div>';
+    form+='<div class="field"><label>Date de la prestation</label><input type="date" id="f_service" value="'+esc(draft.serviceDate||'')+'"></div>';
+    form+='<div class="field"><label>Statut</label><select id="f_status">'+
+      ['brouillon','envoyée'].map(s=>'<option'+(draft.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>';
+    form+='<div class="field"><label>Règlement</label><label class="hstack" style="font-weight:500;margin-top:6px"><input type="checkbox" id="f_paid" '+(draft.paid?'checked':'')+' style="width:auto"> Facture payée</label>'+
+          '<input type="date" id="f_paiddate" value="'+esc(draft.paidDate||'')+'" '+(draft.paid?'':'disabled')+' style="margin-top:6px"></div>';
+  }
+  form+='</div>';
+
+  /* Lignes */
+  form+='<h3 style="margin-top:22px">Prestations</h3>';
+  form+='<table class="lineTable"><thead><tr><th>Désignation</th><th style="width:66px">Qté</th><th style="width:130px;text-align:right">Prix unit.</th><th style="width:96px;text-align:right">Total</th><th></th></tr></thead><tbody id="lineBody"></tbody></table>';
+  form+='<div class="addline"><select id="catPick" style="flex:1;min-width:180px"><option value="">+ Ajouter depuis le catalogue…</option>'+catalogOptions()+'</select>'+
+        '<button class="btn sm" id="addFree">'+I.plus+'Ligne libre</button></div>';
+
+  /* Remise + totaux */
+  form+='<div class="totbox"><div class="totrow"><span>Remise</span><span class="hstack"><input type="number" id="f_disc" value="'+(draft.discount||0)+'" step="0.01" style="width:90px;text-align:right;font-family:var(--display)">'+
+        '<select id="f_disctype" style="width:auto"><option value="eur"'+(draft.discountType==='eur'?' selected':'')+'>€</option><option value="pct"'+(draft.discountType==='pct'?' selected':'')+'>%</option></select></span></div>';
+  form+='<div id="totlines"></div></div>';
+
+  form+='<div class="field full mt16"><label>Notes / conditions particulières <span class="hint">(optionnel — affiché sur le document)</span></label><textarea id="f_notes" placeholder="Ex : acompte de 30 % à la commande, délai de livraison…">'+esc(draft.notes||'')+'</textarea></div>';
+  form+='</div>';
+
+  c.innerHTML='<div class="editor"><div>'+form+'</div><div class="sheetwrap"><div id="doc-preview"></div></div></div>';
+
+  /* Bind champs */
+  const bind=(elid,key,fn)=>{ const el=document.getElementById(elid); if(!el)return; el.oninput=el.onchange=()=>{ draft[key]=fn?fn(el):el.value; refreshPreview(); }; };
+  bind('f_client','clientId'); bind('f_date','date');
+  if(type==='quote'){ bind('f_valid','validUntil'); bind('f_status','status'); }
+  else{
+    bind('f_due','dueDate'); bind('f_service','serviceDate'); bind('f_status','status');
+    const paid=document.getElementById('f_paid'), pd=document.getElementById('f_paiddate');
+    paid.onchange=()=>{ draft.paid=paid.checked; pd.disabled=!paid.checked; if(paid.checked&&!draft.paidDate){draft.paidDate=todayISO();pd.value=draft.paidDate;} refreshPreview(); };
+    pd.onchange=()=>{ draft.paidDate=pd.value; refreshPreview(); };
+  }
+  document.getElementById('f_disc').oninput=e=>{ draft.discount=parseFloat(e.target.value)||0; renderTotals(); refreshPreview(); };
+  document.getElementById('f_disctype').onchange=e=>{ draft.discountType=e.target.value; renderTotals(); refreshPreview(); };
+  document.getElementById('f_notes').oninput=e=>{ draft.notes=e.target.value; refreshPreview(); };
+  document.getElementById('f_newclient').onclick=()=>openClientModal(null,(id)=>{ draft.clientId=id; renderEditor(); });
+  document.getElementById('catPick').onchange=e=>{ if(e.target.value){ addCatalogLine(e.target.value); e.target.value=''; } };
+  document.getElementById('addFree').onclick=()=>{ draft.lines.push({ref:'',name:'',description:'',qty:1,unit:'forfait',price:0}); renderLines(); refreshPreview(); };
+
+  renderLines(); renderTotals(); refreshPreview();
+}
+function catalogOptions(){
+  return CATS.map(cat=>{
+    const items=S.catalog.filter(i=>i.category===cat.id);
+    if(!items.length) return '';
+    return '<optgroup label="'+esc(cat.name)+'">'+items.map(i=>'<option value="'+i.id+'">'+esc(i.name)+' — '+fmt(i.price)+'</option>').join('')+'</optgroup>';
+  }).join('');
+}
+function addCatalogLine(itemId){
+  const it=S.catalog.find(i=>i.id===itemId); if(!it)return;
+  draft.lines.push({ref:it.name,name:it.name,description:it.description,qty:1,unit:it.unit,price:it.price});
+  renderLines(); refreshPreview();
+}
+function renderLines(){
+  const tb=document.getElementById('lineBody'); if(!tb)return;
+  if(!draft.lines.length){ tb.innerHTML='<tr><td colspan="5" style="color:var(--muted);padding:14px 6px">Aucune ligne. Ajoutez une prestation depuis le catalogue ci-dessous.</td></tr>'; return; }
+  tb.innerHTML=draft.lines.map((l,i)=>{
+    const tot=(Number(l.qty)||0)*(Number(l.price)||0);
+    return '<tr data-i="'+i+'">'+
+      '<td class="lt-desc"><input type="text" class="l-name" value="'+esc(l.name)+'" placeholder="Désignation"><input type="text" class="l-desc" value="'+esc(l.description||'')+'" placeholder="Description (optionnel)" style="margin-top:4px;font-size:12px;color:var(--muted)"></td>'+
+      '<td class="lt-num"><input type="number" class="l-qty" value="'+(l.qty)+'" step="0.5" min="0"><input type="text" class="l-unit" value="'+esc(l.unit||'')+'" placeholder="unité" style="margin-top:4px;font-size:11px;text-align:center"></td>'+
+      '<td class="lt-num"><input type="number" class="l-price" value="'+(l.price)+'" step="0.01" min="0"></td>'+
+      '<td class="lt-num" style="padding-top:12px"><span class="tnum" style="font-weight:600">'+fmt(tot)+'</span></td>'+
+      '<td class="lt-rm" style="padding-top:8px"><button class="iconbtn danger l-rm">'+I.trash+'</button></td></tr>';
+  }).join('');
+  tb.querySelectorAll('tr[data-i]').forEach(tr=>{
+    const i=+tr.dataset.i;
+    const upd=(k,el,num)=>el.oninput=()=>{ draft.lines[i][k]=num?(parseFloat(el.value)||0):el.value; renderLines(); renderTotals(); refreshPreview(); syncFocus(i,k); };
+    // to avoid re-render focus loss, use change on some:
+    tr.querySelector('.l-name').oninput=e=>{draft.lines[i].name=e.target.value; refreshPreview();};
+    tr.querySelector('.l-desc').oninput=e=>{draft.lines[i].description=e.target.value; refreshPreview();};
+    tr.querySelector('.l-unit').oninput=e=>{draft.lines[i].unit=e.target.value; refreshPreview();};
+    tr.querySelector('.l-qty').oninput=e=>{draft.lines[i].qty=parseFloat(e.target.value)||0; updateLineTotal(tr,i); renderTotals(); refreshPreview();};
+    tr.querySelector('.l-price').oninput=e=>{draft.lines[i].price=parseFloat(e.target.value)||0; updateLineTotal(tr,i); renderTotals(); refreshPreview();};
+    tr.querySelector('.l-rm').onclick=()=>{ draft.lines.splice(i,1); renderLines(); renderTotals(); refreshPreview(); };
+  });
+}
+function updateLineTotal(tr,i){
+  const tot=(Number(draft.lines[i].qty)||0)*(Number(draft.lines[i].price)||0);
+  const span=tr.querySelector('td.lt-num:nth-child(4) span'); if(span) span.textContent=fmt(tot);
+}
+function syncFocus(){}
+function renderTotals(){
+  const el=document.getElementById('totlines'); if(!el)return;
+  const t=docTotals(draft);
+  let h='';
+  h+='<div class="totrow"><span>Sous-total</span><span class="tnum">'+fmt(t.sub)+'</span></div>';
+  if(t.rem>0) h+='<div class="totrow"><span>Remise</span><span class="tnum" style="color:var(--warn)">− '+fmt(t.rem)+'</span></div>';
+  h+='<div class="totrow big"><span>'+(draftType==='quote'?'Total':'Net à payer')+'</span><span class="tnum">'+fmt(t.total)+'</span></div>';
+  h+='<div style="font-size:11px;color:var(--muted);text-align:right">TVA non applicable, art. 293 B du CGI</div>';
+  el.innerHTML=h;
+}
+function refreshPreview(){
+  const p=document.getElementById('doc-preview'); if(!p)return;
+  p.innerHTML=docHTML(draft,draftType);
+}
+function saveDraft(silent){
+  if(!draft.clientId){ toast('Choisissez un client avant d’enregistrer.'); if(!silent) return false; }
+  const store=draftType==='quote'?S.quotes:S.invoices;
+  if(draftIsNew){
+    if(!draft.number){ S.counters[draftType]=(S.counters[draftType]||0)+1; draft.number=newNumber(draftType).replace(/\d+$/,String(S.counters[draftType]).padStart(4,'0')); }
+    store.push(draft); draftIsNew=false;
+  }else{
+    const idx=store.findIndex(d=>d.id===draft.id);
+    if(idx>=0) store[idx]=JSON.parse(JSON.stringify(draft));
+  }
+  save();
+  if(!silent){ toast((draftType==='quote'?'Devis':'Facture')+' enregistré'+(draftType==='quote'?'':'e')+' · '+draft.number); }
+  document.getElementById('pageTitle').textContent=(draftType==='quote'?'Devis':'Facture')+' · '+draft.number;
+  return true;
+}
+
+/* ---------- Convertir devis -> facture ---------- */
+function convertToInvoice(quoteId){
+  const q=S.quotes.find(x=>x.id===quoteId); if(!q)return;
+  openModal(
+    '<div class="modal-head"><h3>Transformer en facture</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
+    '<div class="modal-body"><p style="margin:0 0 6px">Créer une facture à partir du devis <b>'+esc(q.number)+'</b> ?</p>'+
+    '<p style="color:var(--muted);margin:0">Le devis sera marqué « accepté ». La facture reprendra le client et les lignes, avec un nouveau numéro.</p></div>'+
+    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" id="doConv">Créer la facture</button></div>'
+  );
+  document.getElementById('doConv').onclick=()=>{
+    S.counters.invoice=(S.counters.invoice||0)+1;
+    const inv={ id:uid('invoice'), number:newNumber('invoice').replace(/\d+$/,String(S.counters.invoice).padStart(4,'0')),
+      clientId:q.clientId, date:todayISO(), serviceDate:q.date, dueDate:addDays(todayISO(),S.settings.invoiceDueDays),
+      lines:JSON.parse(JSON.stringify(q.lines)), discount:q.discount, discountType:q.discountType,
+      notes:q.notes, status:'envoyée', paid:false, paidDate:'', fromQuote:q.number };
+    S.invoices.push(inv); q.status='accepté'; save(); closeModal();
+    toast('Facture '+inv.number+' créée'); openEditor('invoice',inv.id);
+  };
+}
+function duplicateDoc(type,id){
+  const store=type==='quote'?S.quotes:S.invoices;
+  const src=store.find(d=>d.id===id); if(!src)return;
+  const copy=JSON.parse(JSON.stringify(src));
+  copy.id=uid(type); copy.date=todayISO(); copy.status='brouillon'; copy.number=null; copy.paid=false; copy.paidDate=''; copy.fromQuote=undefined;
+  if(type==='quote') copy.validUntil=addDays(todayISO(),S.settings.quoteValidityDays);
+  else copy.dueDate=addDays(todayISO(),S.settings.invoiceDueDays);
+  S.counters[type]=(S.counters[type]||0)+1;
+  copy.number=newNumber(type).replace(/\d+$/,String(S.counters[type]).padStart(4,'0'));
+  store.push(copy); save(); toast('Copie créée · '+copy.number); go(type==='quote'?'quotes':'invoices');
+}
+function confirmDelete(type,id){
+  const store=type==='quote'?S.quotes:S.invoices;
+  const d=store.find(x=>x.id===id); if(!d)return;
+  openModal(
+    '<div class="modal-head"><h3>Supprimer '+(type==='quote'?'le devis':'la facture')+' ?</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
+    '<div class="modal-body"><p style="margin:0">Le document <b>'+esc(d.number)+'</b> sera définitivement supprimé. Cette action est irréversible.</p>'+
+    (type==='invoice'?'<p style="color:var(--warn);font-size:12.5px;margin:10px 0 0">Attention : la numérotation des factures doit rester continue. Ne supprimez une facture que si elle n’a pas été transmise au client.</p>':'')+'</div>'+
+    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn danger" id="doDel">Supprimer</button></div>'
+  );
+  document.getElementById('doDel').onclick=()=>{
+    const idx=store.findIndex(x=>x.id===id); store.splice(idx,1); save(); closeModal(); toast('Supprimé'); go(type==='quote'?'quotes':'invoices');
+  };
+}
+
+/* ---------- Rendu du document (feuille) ---------- */
+function docHTML(doc,type){
+  const co=S.company, cl=clientById(doc.clientId), t=docTotals(doc);
+  const isQ=type==='quote';
+  const coLines=[co.address, [co.zip,co.city].filter(Boolean).join(' '),
+    co.siret?('SIRET '+co.siret):'', co.email, co.phone].filter(Boolean);
+  const clLines= cl?[cl.contact, cl.address, [cl.zip,cl.city].filter(Boolean).join(' '), cl.siret?('SIRET '+cl.siret):'', cl.email].filter(Boolean):[];
+  let rows=(doc.lines||[]).map(l=>{
+    const lt=(Number(l.qty)||0)*(Number(l.price)||0);
+    return '<tr><td><div class="d-name">'+esc(l.name||'—')+'</div>'+(l.description?'<div class="d-desc">'+nl2br(l.description)+'</div>':'')+'</td>'+
+      '<td class="r">'+esc(l.qty)+(l.unit?' '+esc(l.unit):'')+'</td>'+
+      '<td class="r">'+fmt(l.price)+'</td>'+
+      '<td class="r">'+fmt(lt)+'</td></tr>';
+  }).join('');
+  if(!rows) rows='<tr><td colspan="4" style="color:#9aa;padding:16px">—</td></tr>';
+
+  let dateBox='';
+  if(isQ){
+    dateBox='<div><b>Date</b> · '+fmtDate(doc.date)+'</div>'+(doc.validUntil?'<div><b>Valable jusqu’au</b> · '+fmtDate(doc.validUntil)+'</div>':'');
+  }else{
+    dateBox='<div><b>Date d’émission</b> · '+fmtDate(doc.date)+'</div>'+
+      (doc.serviceDate?'<div><b>Prestation</b> · '+fmtDate(doc.serviceDate)+'</div>':'')+
+      (doc.dueDate?'<div><b>Échéance</b> · '+fmtDate(doc.dueDate)+'</div>':'')+
+      (doc.paid?'<div style="color:#17795E"><b>Payée</b> · '+fmtDate(doc.paidDate)+'</div>':'')+
+      (doc.fromQuote?'<div style="color:#8A8F9C">Réf. devis '+esc(doc.fromQuote)+'</div>':'');
+  }
+
+  let h='<div class="sheet">';
+  h+='<div class="doc-top"><div>'+
+      (co.logo?'<img class="logo" src="'+co.logo+'" alt="logo"><div style="height:8px"></div>':'')+
+      '<div class="wordmark">'+wordmarkHTML(co.name)+'</div>'+(co.tagline?'<div class="co-tag">'+esc(co.tagline)+'</div>':'')+
+      '<div class="co-lines">'+coLines.map(esc).join('<br>')+'</div></div>'+
+      '<div class="doc-title"><div class="dt">'+(isQ?'Devis':'Facture')+'</div><div class="dn">'+esc(doc.number||'(brouillon)')+'</div></div></div>';
+  h+='<div class="meta"><div class="party"><div class="plbl">'+(isQ?'Devis pour':'Facturé à')+'</div>'+
+      '<div class="pname">'+esc(cl?cl.name:'— client non renseigné —')+'</div>'+
+      (clLines.length?'<div class="plines">'+clLines.map(esc).join('<br>')+'</div>':'')+'</div>'+
+      '<div class="datebox">'+dateBox+'</div></div>';
+  h+='<table class="doc-items"><thead><tr><th>Désignation</th><th class="r">Qté</th><th class="r">Prix unit.</th><th class="r">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  h+='<div class="sums"><div class="sbox">'+
+      '<div class="srow"><span>Sous-total</span><span class="tnum">'+fmt(t.sub)+'</span></div>'+
+      (t.rem>0?'<div class="srow"><span>Remise</span><span class="tnum">− '+fmt(t.rem)+'</span></div>':'')+
+      '<div class="stotal"><span>'+(isQ?'Total':'Net à payer')+'</span><span class="tnum">'+fmt(t.total)+'</span></div></div></div>';
+  h+='<div class="tva-note">'+esc(co.legalMention||'TVA non applicable, article 293 B du CGI.')+'</div>';
+  if(doc.notes) h+='<div class="notes"><b>Notes :</b> '+nl2br(doc.notes)+'</div>';
+  if(isQ){
+    h+='<div class="signbox"><div class="sb"><b>Bon pour accord</b>Date et signature du client :</div></div>';
+  }
+  // Legal footer
+  let legal=[];
+  if(isQ && co.quoteFooter) legal.push(co.quoteFooter);
+  if(!isQ){ if(co.paymentTerms) legal.push(co.paymentTerms); if(co.latePenalty) legal.push(co.latePenalty); }
+  if(!isQ && (co.iban||co.bic)) legal.push('Coordonnées bancaires : '+[co.iban?('IBAN '+co.iban):'',co.bic?('BIC '+co.bic):''].filter(Boolean).join(' · '));
+  if(legal.length) h+='<div class="legal">'+legal.map(esc).join('<br>')+'</div>';
+  h+='<div class="foot">'+esc(co.name)+(co.siret?' · SIRET '+esc(co.siret):'')+(co.website?' · '+esc(co.website):'')+'</div>';
+  h+='</div>';
+  return h;
+}
+function printDoc(type,id){
+  const store=type==='quote'?S.quotes:S.invoices;
+  const doc=store.find(d=>d.id===id)|| (draft&&draft.id===id?draft:null);
+  if(!doc)return;
+  document.getElementById('print-root').innerHTML=docHTML(doc,type);
+  setTimeout(()=>window.print(),60);
+}
+
+/* ========================================================= */
+/* CLIENTS                                                    */
+/* ========================================================= */
+function renderClients(c){
+  document.getElementById('pageActions').innerHTML='<button class="btn primary" id="newC">'+I.plus+'Nouveau client</button>';
+  document.getElementById('newC').onclick=()=>openClientModal();
+  if(!S.clients.length){ c.innerHTML=emptyBlock(I.clients,'Aucun client','Ajoutez vos clients pour les réutiliser dans vos devis et factures.'); return; }
+  let h='<div class="card"><table><thead><tr><th>Client</th><th>Contact</th><th>Ville</th><th class="t-right">Documents</th><th></th></tr></thead><tbody>';
+  S.clients.forEach(cl=>{
+    const docs=S.quotes.filter(q=>q.clientId===cl.id).length+S.invoices.filter(i=>i.clientId===cl.id).length;
+    h+='<tr data-id="'+cl.id+'"><td><div class="cell-strong">'+esc(cl.name)+'</div>'+(cl.email?'<div class="cell-sub">'+esc(cl.email)+'</div>':'')+'</td>'+
+       '<td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.city||'—')+'</td>'+
+       '<td class="t-right tnum">'+docs+'</td>'+
+       '<td><div class="rowActions"><button class="iconbtn c-edit">'+I.edit+'</button><button class="iconbtn danger c-del">'+I.trash+'</button></div></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  c.innerHTML=h;
+  c.querySelectorAll('tr[data-id]').forEach(tr=>{
+    const id=tr.dataset.id;
+    tr.querySelector('.c-edit').onclick=()=>openClientModal(id);
+    tr.querySelector('.c-del').onclick=()=>{
+      const used=S.quotes.some(q=>q.clientId===id)||S.invoices.some(i=>i.clientId===id);
+      if(used){ toast('Client utilisé dans des documents — suppression bloquée.'); return; }
+      S.clients=S.clients.filter(x=>x.id!==id); save(); go('clients');
+    };
+  });
+}
+function openClientModal(id,cb){
+  const cl=id?clientById(id):{name:'',contact:'',address:'',zip:'',city:'',email:'',phone:'',siret:''};
+  openModal(
+    '<div class="modal-head"><h3>'+(id?'Modifier le client':'Nouveau client')+'</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
+    '<div class="modal-body"><div class="form-grid">'+
+      '<div class="field full"><label>Nom / Société *</label><input type="text" id="c_name" value="'+esc(cl.name)+'"></div>'+
+      '<div class="field full"><label>Contact (personne)</label><input type="text" id="c_contact" value="'+esc(cl.contact||'')+'"></div>'+
+      '<div class="field full"><label>Adresse</label><input type="text" id="c_address" value="'+esc(cl.address||'')+'"></div>'+
+      '<div class="field"><label>Code postal</label><input type="text" id="c_zip" value="'+esc(cl.zip||'')+'"></div>'+
+      '<div class="field"><label>Ville</label><input type="text" id="c_city" value="'+esc(cl.city||'')+'"></div>'+
+      '<div class="field"><label>Email</label><input type="email" id="c_email" value="'+esc(cl.email||'')+'"></div>'+
+      '<div class="field"><label>Téléphone</label><input type="tel" id="c_phone" value="'+esc(cl.phone||'')+'"></div>'+
+      '<div class="field full"><label>SIRET <span class="hint">(si client professionnel)</span></label><input type="text" id="c_siret" value="'+esc(cl.siret||'')+'"></div>'+
+    '</div></div>'+
+    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" id="c_save">Enregistrer</button></div>'
+  );
+  document.getElementById('c_save').onclick=()=>{
+    const g=x=>document.getElementById(x).value.trim();
+    const name=g('c_name'); if(!name){ toast('Le nom est obligatoire.'); return; }
+    const data={name,contact:g('c_contact'),address:g('c_address'),zip:g('c_zip'),city:g('c_city'),email:g('c_email'),phone:g('c_phone'),siret:g('c_siret')};
+    let newId;
+    if(id){ Object.assign(clientById(id),data); newId=id; }
+    else { newId=uid('cli'); S.clients.push(Object.assign({id:newId},data)); }
+    save(); closeModal(); toast('Client enregistré');
+    if(cb) cb(newId); else if(VIEW==='clients') go('clients');
+  };
+}
+
+/* ========================================================= */
+/* CATALOGUE                                                  */
+/* ========================================================= */
+function renderCatalog(c){
+  document.getElementById('pageActions').innerHTML='<button class="btn primary" id="newIt">'+I.plus+'Nouvelle prestation</button>';
+  document.getElementById('newIt').onclick=()=>openItemModal();
+  let h='<div style="font-size:12.5px;color:var(--muted);margin-bottom:16px">Prix indicatifs de départ — ajustez-les à vos tarifs. Ces prestations alimentent la création de devis et factures.</div>';
+  CATS.forEach(cat=>{
+    const items=S.catalog.filter(i=>i.category===cat.id);
+    h+='<div class="card catgroup"><div class="ch"><span class="dot" style="background:'+cat.color+'"></span>'+esc(cat.name)+' <span class="cnt">· '+items.length+'</span></div>';
+    if(items.length){
+      h+='<table><tbody>';
+      items.forEach(it=>{
+        h+='<tr data-id="'+it.id+'"><td style="width:55%"><div class="cell-strong">'+esc(it.name)+'</div>'+(it.description?'<div class="cell-sub">'+esc(it.description)+'</div>':'')+'</td>'+
+           '<td class="cell-sub">/ '+esc(it.unit||'forfait')+'</td>'+
+           '<td class="t-right tnum cell-strong">'+fmt(it.price)+'</td>'+
+           '<td><div class="rowActions"><button class="iconbtn it-edit">'+I.edit+'</button><button class="iconbtn danger it-del">'+I.trash+'</button></div></td></tr>';
+      });
+      h+='</tbody></table>';
+    } else h+='<div style="padding:10px 16px;color:var(--muted);font-size:12.5px">Aucune prestation.</div>';
+    h+='</div>';
+  });
+  c.innerHTML=h;
+  c.querySelectorAll('tr[data-id]').forEach(tr=>{
+    const id=tr.dataset.id;
+    tr.querySelector('.it-edit').onclick=()=>openItemModal(id);
+    tr.querySelector('.it-del').onclick=()=>{ S.catalog=S.catalog.filter(x=>x.id!==id); save(); go('catalog'); };
+  });
+}
+function openItemModal(id){
+  const it=id?S.catalog.find(x=>x.id===id):{category:CATS[0].id,name:'',description:'',price:0,unit:'forfait'};
+  openModal(
+    '<div class="modal-head"><h3>'+(id?'Modifier la prestation':'Nouvelle prestation')+'</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
+    '<div class="modal-body"><div class="form-grid">'+
+      '<div class="field full"><label>Catégorie</label><select id="it_cat">'+CATS.map(x=>'<option value="'+x.id+'"'+(x.id===it.category?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
+      '<div class="field full"><label>Nom *</label><input type="text" id="it_name" value="'+esc(it.name)+'"></div>'+
+      '<div class="field full"><label>Description</label><textarea id="it_desc">'+esc(it.description||'')+'</textarea></div>'+
+      '<div class="field"><label>Prix (€)</label><input type="number" id="it_price" value="'+it.price+'" step="0.01" min="0"></div>'+
+      '<div class="field"><label>Unité</label><input type="text" id="it_unit" value="'+esc(it.unit||'forfait')+'" placeholder="forfait, jour, page…"></div>'+
+    '</div><div style="font-size:11.5px;color:var(--muted)">Prix net — TVA non applicable (auto-entrepreneur).</div></div>'+
+    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" id="it_save">Enregistrer</button></div>'
+  );
+  document.getElementById('it_save').onclick=()=>{
+    const g=x=>document.getElementById(x).value;
+    const name=g('it_name').trim(); if(!name){ toast('Le nom est obligatoire.'); return; }
+    const data={category:g('it_cat'),name,description:g('it_desc').trim(),price:parseFloat(g('it_price'))||0,unit:g('it_unit').trim()||'forfait'};
+    if(id) Object.assign(S.catalog.find(x=>x.id===id),data);
+    else S.catalog.push(Object.assign({id:uid('it')},data));
+    save(); closeModal(); go('catalog');
+  };
+}
+
+/* ========================================================= */
+/* MON ENTREPRISE                                             */
+/* ========================================================= */
+function renderCompany(c){
+  const co=S.company;
+  document.getElementById('pageActions').innerHTML='<button class="btn primary" id="saveCo">'+I.save+'Enregistrer</button>';
+  const F=(id,lbl,val,ph='',hint='')=>'<div class="field"><label>'+lbl+(hint?' <span class="hint">'+hint+'</span>':'')+'</label><input type="text" id="'+id+'" value="'+esc(val||'')+'" placeholder="'+esc(ph)+'"></div>';
+  const T=(id,lbl,val)=>'<div class="field full"><label>'+lbl+'</label><textarea id="'+id+'">'+esc(val||'')+'</textarea></div>';
+  let h='<div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;align-items:start">';
+  // colonne gauche : identité
+  h+='<div class="card panel"><h3>Identité</h3><div class="form-grid">'+
+      '<div class="field full"><label>Logo</label><div class="hstack">'+
+        (co.logo?'<img src="'+co.logo+'" style="height:44px;border:1px solid var(--line);border-radius:6px;padding:4px;background:#fff">':'<span style="color:var(--muted);font-size:12.5px">Aucun logo</span>')+
+        '<button class="btn sm" id="logoBtn">'+I.up+'Choisir…</button>'+(co.logo?'<button class="btn sm danger" id="logoDel">Retirer</button>':'')+
+      '</div><input type="file" id="logoFile" accept="image/*" style="display:none"></div>'+
+      '<div class="field full"><label>Nom / Raison sociale</label><input type="text" id="co_name" value="'+esc(co.name)+'"></div>'+
+      '<div class="field full"><label>Accroche</label><input type="text" id="co_tag" value="'+esc(co.tagline)+'"></div>'+
+      '<div class="field full"><label>Adresse</label><input type="text" id="co_address" value="'+esc(co.address)+'"></div>'+
+      F('co_zip','Code postal',co.zip)+F('co_city','Ville',co.city)+
+      F('co_siret','SIRET',co.siret,'','obligatoire sur factures')+F('co_ape','Code APE',co.ape)+
+      F('co_email','Email',co.email)+F('co_phone','Téléphone',co.phone)+
+      '<div class="field full"><label>Site web</label><input type="text" id="co_web" value="'+esc(co.website)+'"></div>'+
+      F('co_iban','IBAN',co.iban)+F('co_bic','BIC',co.bic)+
+    '</div></div>';
+  // colonne droite : mentions
+  h+='<div class="card panel"><h3>Mentions légales & conditions</h3>'+
+      T('co_legal','Mention TVA',co.legalMention)+
+      T('co_pay','Conditions de règlement (factures)',co.paymentTerms)+
+      T('co_late','Pénalités de retard (factures)',co.latePenalty)+
+      T('co_qf','Mention de bas de devis',co.quoteFooter)+
+      '<div style="font-size:11.5px;color:var(--muted)">Statut auto-entrepreneur : pas de TVA facturée. La mention « TVA non applicable, art. 293 B du CGI » est obligatoire sur chaque document.</div>'+
+    '</div>';
+  h+='</div>';
+  c.innerHTML=h;
+
+  // logo upload
+  const lf=document.getElementById('logoFile');
+  document.getElementById('logoBtn').onclick=()=>lf.click();
+  lf.onchange=()=>{ const f=lf.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ S.company.logo=r.result; save(); go('company'); }; r.readAsDataURL(f); };
+  if(document.getElementById('logoDel')) document.getElementById('logoDel').onclick=()=>{ S.company.logo=''; save(); go('company'); };
+
+  document.getElementById('saveCo').onclick=()=>{
+    const g=x=>{const e=document.getElementById(x); return e?e.value.trim():'';};
+    Object.assign(S.company,{
+      name:g('co_name'),tagline:g('co_tag'),address:g('co_address'),zip:g('co_zip'),city:g('co_city'),
+      siret:g('co_siret'),ape:g('co_ape'),email:g('co_email'),phone:g('co_phone'),website:g('co_web'),
+      iban:g('co_iban'),bic:g('co_bic'),legalMention:g('co_legal'),paymentTerms:g('co_pay'),
+      latePenalty:g('co_late'),quoteFooter:g('co_qf')
+    });
+    save(); toast('Informations enregistrées');
+  };
+}
+
+/* ========================================================= */
+/* SAUVEGARDE / RESTAURATION                                  */
+/* ========================================================= */
+function exportData(){
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='tbsn-facturation-'+todayISO()+'.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('Sauvegarde téléchargée');
+}
+document.getElementById('importFile').onchange=function(){
+  const f=this.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result);
+      if(!d.company||!Array.isArray(d.catalog)) throw 0;
+      S=d; save(); go('dashboard'); toast('Données restaurées');
+    }catch(e){ toast('Fichier invalide.'); } this.value=''; };
+  r.readAsText(f);
+};
+document.getElementById('btnExport').innerHTML=I.down+'Sauvegarder';
+document.getElementById('btnImport').innerHTML=I.up+'Restaurer';
+document.getElementById('btnExport').onclick=exportData;
+document.getElementById('btnImport').onclick=()=>document.getElementById('importFile').click();
+
+/* ---------- Init ---------- */
+buildNav();
+go('dashboard');
+</script>
+</body>
+</html>
