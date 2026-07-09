@@ -208,14 +208,45 @@ textarea{resize:vertical;min-height:70px;font-family:var(--body)}
 .mb0{margin-bottom:0}.mt16{margin-top:16px}.spacer{flex:1}
 select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radius:999px;width:auto}
 
+/* ---------- Blocs de prestation (éditeur devis) ---------- */
+.blocs{display:flex;flex-direction:column;gap:12px}
+.bloc{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.bloc-head{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--paper);border-bottom:1px solid var(--line)}
+.bloc-head .dot{width:11px;height:11px;border-radius:50%;flex:none}
+.bloc-head .bn{font-family:var(--display);font-weight:600;color:var(--navy);flex:1;font-size:13.5px;line-height:1.2}
+.bloc-head .bn small{display:block;font-family:var(--body);font-weight:400;color:var(--muted);font-size:11px;margin-top:1px}
+.bloc-head .bprice{font-family:var(--display);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bloc-body{padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.ctrl-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
+.ctrl-row>label{font-weight:500;color:var(--ink);font-size:13px}
+.ctrl-row select,.ctrl-row input{width:auto;min-width:120px;max-width:220px}
+.ctrl-row .num{width:88px;min-width:0;text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums}
+.opt-list{display:flex;flex-direction:column;border-top:1px dashed var(--line);margin-top:8px;padding-top:6px}
+.opt-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;font-size:13px;cursor:pointer}
+.opt-item .oc{display:flex;align-items:flex-start;gap:9px;line-height:1.35}
+.opt-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--orange);flex:none;margin-top:1px;cursor:pointer}
+.opt-item .op{font-family:var(--display);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.opt-item.on .op{color:var(--navy)}
+.opt-item.on{color:var(--navy)}
+.svcpick{margin-top:12px}
+.catbase{display:flex;align-items:center;gap:10px}
+.catbase .num{width:110px}
+.optedit{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line-2)}
+.optedit input.lbl{flex:1}
+.optedit input.pr{width:96px;text-align:right;font-family:var(--display)}
+
 /* ---------- Impression ---------- */
 #print-root{position:fixed;left:-99999px;top:0}
 @media print{
-  body{background:#fff}
+  html,body{background:#fff}
   body > *:not(#print-root){display:none !important}
   #print-root{position:static;left:auto}
   #print-root .sheet{border:none;box-shadow:none;border-radius:0;padding:0}
-  @page{margin:16mm 14mm}
+  .sheet, .sheet *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  .sheet table.doc-items{page-break-inside:auto}
+  .sheet table.doc-items tr{page-break-inside:avoid}
+  .sheet .sums,.sheet .signbox{page-break-inside:avoid}
+  @page{size:A4 portrait;margin:15mm 14mm}
 }
 
 /* ---------- Responsive ---------- */
@@ -257,6 +288,7 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
     <div class="rail-foot">
       <button class="rf-btn" id="btnExport"></button>
       <button class="rf-btn" id="btnImport"></button>
+      <button class="rf-btn" id="btnReset"></button>
     </div>
   </aside>
 
@@ -279,8 +311,9 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
 
 <script>
 /* =========================================================
-   TBSN — Devis & Factures  (application autonome, hors-ligne)
-   Données stockées localement dans le navigateur.
+   TBSN groupe — Devis & Factures (application autonome)
+   Modèle : prestation principale + options, fidèle au
+   simulateur de tbsngroupe.fr. Données locales au navigateur.
    ========================================================= */
 
 /* ---------- Icônes ---------- */
@@ -297,7 +330,6 @@ const I = {
   copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
   print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
   toInv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>',
-  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
   down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
@@ -310,50 +342,79 @@ const NAV = [
   {v:'quotes',t:'Devis',i:I.quote},
   {v:'invoices',t:'Factures',i:I.invoice},
   {v:'clients',t:'Clients',i:I.clients},
-  {v:'catalog',t:'Catalogue',i:I.catalog},
+  {v:'catalog',t:'Prestations',i:I.catalog},
   {v:'company',t:'Mon entreprise',i:I.company},
 ];
 
 /* ---------- Stockage (localStorage + repli mémoire) ---------- */
 const DB = {
-  key:'tbsn_facturation_v3', _mem:null,
+  key:'tbsn_facturation_v4', _mem:null,
   load(){ try{ const r=localStorage.getItem(this.key); return r?JSON.parse(r):null; }catch(e){ return this._mem; } },
   save(s){ try{ localStorage.setItem(this.key, JSON.stringify(s)); }catch(e){ this._mem=s; } }
 };
 
-/* ---------- Catalogue par défaut ---------- */
-const CATS = [
-  {id:'logo', name:'Logo / Identité visuelle', color:'#1D4ED8'},
-  {id:'print', name:'Print', color:'#0E7490'},
-  {id:'video', name:'Vidéo', color:'#7E22CE'},
-  {id:'photo', name:'Photo', color:'#A16207'},
-  {id:'social', name:'Réseaux sociaux', color:'#BE185D'},
-  {id:'drone', name:'Drone', color:'#334155'},
+/* ---------- Prestations par défaut (identiques au site) ---------- */
+const DEFAULT_SERVICES = [
+  { id:'logo', nom:'Logo & identité visuelle', desc:'Logo sur mesure, fichiers vectoriels sources inclus',
+    base:490, couleur:'#1D4ED8',
+    options:[
+      {id:'charte', label:"Charte graphique complète (couleurs, typos, règles d'usage)", prix:350},
+      {id:'variantes', label:'Déclinaisons du logo (monochrome, icône, favicon)', prix:130},
+      {id:'cartes', label:'Cartes de visite (maquette prête à imprimer)', prix:90},
+    ]},
+  { id:'print', nom:'Supports print (affiche, flyer…)', desc:'Création graphique prête à imprimer',
+    base:120, couleur:'#0E7490', qty:{label:'Nombre de supports', min:1, max:20, def:1},
+    options:[
+      {id:'formats', label:'Déclinaison multi-formats (A4/A3/web) par support', prix:50, parQty:true},
+      {id:'express', label:'Livraison express sous 72h', prix:70},
+    ]},
+  { id:'web', nom:'Site internet', desc:'Site responsive sur mesure, pensé pour convertir',
+    base:1290, couleur:'#7E22CE',
+    select:{label:'Type de site', opts:[
+      {label:'Page unique (one-page)', coef:1},
+      {label:'Site vitrine (4 à 6 pages)', coef:2.3},
+      {label:'Site vitrine + blog / actualités', coef:3.5},
+      {label:'Site complet (multi-pages, galerie, blog)', coef:5.5},
+    ]},
+    options:[
+      {id:'redac', label:'Rédaction complète des textes du site', prix:350},
+      {id:'seo', label:'Référencement Google (SEO)', prix:490},
+      {id:'contenu', label:'Shooting photo / vidéo pour le site', prix:390},
+      {id:'galerie', label:'Galerie / portfolio interactif', prix:290},
+      {id:'contact', label:'Formulaire de contact avec envoi automatique', prix:190},
+      {id:'anim', label:'Animations au défilement & effets soignés', prix:250},
+      {id:'reseaux', label:'Boutons & liens vers vos réseaux + avis Google', prix:190},
+      {id:'partage', label:'Aperçu de partage sur les réseaux + favicon', prix:150},
+      {id:'domaine', label:'Nom de domaine + mise en ligne (1re année)', prix:150},
+      {id:'maint', label:'Maintenance & petites mises à jour (6 mois)', prix:360},
+    ]},
+  { id:'photo', nom:'Photographie', desc:'Reportage, portraits ou produits — photos retouchées',
+    base:320, couleur:'#A16207',
+    select:{label:'Durée de la séance', opts:[
+      {label:'Demi-journée', coef:1},
+      {label:'Journée complète', coef:1.7},
+    ]},
+    options:[
+      {id:'retouche', label:'Retouches avancées (détourage, packshots)', prix:90},
+    ]},
+  { id:'social', nom:'Animation des réseaux sociaux', desc:'Abonnement mensuel, sans engagement', mensuel:true,
+    base:279, couleur:'#BE185D',
+    select:{label:'Formule', opts:[
+      {label:'Pack 8 publications / mois', coef:1},
+      {label:'Pack 16 publications / mois', coef:1.7},
+    ]},
+    options:[
+      {id:'cm', label:'Community management (réponses, modération)', prix:180},
+      {id:'stories', label:'Stories & reels supplémentaires', prix:80},
+    ]},
+  { id:'drone', nom:'Vidéo & photo par drone', desc:'Prises de vues aériennes 4K, télépilote déclaré',
+    base:380, couleur:'#334155', km:true,
+    options:[
+      {id:'montagedrone', label:'Montage vidéo des images drone inclus', prix:190},
+      {id:'photosaero', label:'Pack photos aériennes HD (20 clichés)', prix:110},
+    ]},
 ];
-function defaultCatalog(){
-  const seed = [
-    ['logo','Création de logo','Recherches, propositions et fichiers finaux (vectoriel + web)',490,'forfait'],
-    ['logo','Charte graphique','Couleurs, typographies et règles d’usage',690,'forfait'],
-    ['logo','Déclinaison / refonte de logo','Modernisation ou adaptation d’un logo existant',290,'forfait'],
-    ['print','Carte de visite','Création + bon à tirer (hors impression)',90,'forfait'],
-    ['print','Flyer A5 recto/verso','Conception graphique',150,'forfait'],
-    ['print','Affiche A3 / A2','Conception graphique',180,'forfait'],
-    ['print','Plaquette / brochure','Mise en page, par page',60,'page'],
-    ['video','Vidéo courte réseaux sociaux','Format court, tournage + montage',450,'forfait'],
-    ['video','Film institutionnel','Tournage, montage, étalonnage',1200,'forfait'],
-    ['video','Journée de montage','Post-production, par jour',350,'jour'],
-    ['photo','Reportage photo — demi-journée','Prises de vue + retouches',250,'forfait'],
-    ['photo','Reportage photo — journée','Prises de vue + retouches',450,'jour'],
-    ['photo','Photo produit','Par visuel retouché',25,'unité'],
-    ['social','Community management mensuel','Gestion et publications, par mois',350,'mois'],
-    ['social','Pack de contenus','10 visuels adaptés aux réseaux',290,'forfait'],
-    ['social','Création de contenu','Visuel unique (story, post)',25,'unité'],
-    ['social','Reel / vidéo courte réseaux','Tournage + montage vertical',180,'forfait'],
-    ['drone','Prise de vue aérienne — demi-journée','Captation drone (télépilote certifié)',350,'forfait'],
-    ['drone','Captation drone + montage','Captation aérienne et montage',650,'forfait'],
-  ];
-  return seed.map((r,i)=>({id:'it'+(i+1)+'_'+Math.random().toString(36).slice(2,6),category:r[0],name:r[1],description:r[2],price:r[3],unit:r[4]}));
-}
+
 function defaultState(){
   return {
     company:{
@@ -366,36 +427,79 @@ function defaultState(){
       latePenalty:'En cas de retard de paiement : pénalités au taux de 3 fois le taux d’intérêt légal, et indemnité forfaitaire de 40 € pour frais de recouvrement (clients professionnels).',
       quoteFooter:'Devis gratuit et sans engagement. À retourner daté et signé avec la mention « Bon pour accord ». Télépilote de drone certifié — Catégorie Ouverte A1/A3.'
     },
-    clients:[], catalog:defaultCatalog(), quotes:[], invoices:[],
+    clients:[], services:JSON.parse(JSON.stringify(DEFAULT_SERVICES)), quotes:[], invoices:[],
     counters:{quote:0, invoice:0},
-    settings:{quoteValidityDays:30, invoiceDueDays:30}
+    settings:{quoteValidityDays:30, invoiceDueDays:30, pricePerKm:0.50, autoRemise:true}
   };
 }
 let S = DB.load() || defaultState();
+if(!S.settings) S.settings={quoteValidityDays:30,invoiceDueDays:30,pricePerKm:0.50,autoRemise:true};
+if(S.settings.pricePerKm==null) S.settings.pricePerKm=0.50;
+if(!S.services) S.services=JSON.parse(JSON.stringify(DEFAULT_SERVICES));
 function save(){ DB.save(S); }
 
 /* ---------- Utilitaires ---------- */
 const uid = (p='id')=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const eur = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'});
 const fmt = n=>eur.format(isFinite(n)?n:0);
+const fmtRate = n=>eur.format(isFinite(n)?n:0);
 const todayISO = ()=>new Date().toISOString().slice(0,10);
 function addDays(iso,d){ const dt=new Date(iso+'T00:00:00'); dt.setDate(dt.getDate()+d); return dt.toISOString().slice(0,10); }
 function fmtDate(iso){ if(!iso) return '—'; const dt=new Date(iso+'T00:00:00'); return dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function nl2br(s){ return esc(s).replace(/\n/g,'<br>'); }
 function wordmarkHTML(name){ return esc(name||'').replace(/(groupe\.?)/i,'<span style="color:var(--orange)">$1</span>'); }
-function docTotals(doc){
-  const sub = (doc.lines||[]).reduce((a,l)=>a+(Number(l.qty)||0)*(Number(l.price)||0),0);
-  let rem = 0;
-  if(doc.discountType==='pct') rem = sub*(Number(doc.discount)||0)/100;
-  else rem = Number(doc.discount)||0;
-  rem = Math.min(rem, sub);
-  const total = Math.max(0, sub-rem);
-  return {sub, rem, total};
-}
+function svcById(id){ return S.services.find(s=>s.id===id); }
 function clientById(id){ return S.clients.find(c=>c.id===id); }
-function catName(id){ const c=CATS.find(x=>x.id===id); return c?c.name:id; }
-function catColor(id){ const c=CATS.find(x=>x.id===id); return c?c.color:'#8A8F9C'; }
+
+/* ---------- Calcul d'un document (fidèle au simulateur) ---------- */
+function computeDoc(doc){
+  const lines=[]; let oneShot=0, monthly=0, travel=0, nbServices=0;
+  (doc.blocs||[]).forEach(b=>{
+    const s=svcById(b.svcId); if(!s) return;
+    nbServices++;
+    let coef=1, selLabel='';
+    if(s.select){ const i=Math.min(s.select.opts.length-1,Math.max(0,b.sel||0)); coef=s.select.opts[i].coef; selLabel=s.select.opts[i].label; }
+    let qty=1;
+    if(s.qty){ qty=Math.min(s.qty.max,Math.max(s.qty.min,parseInt(b.qty)||s.qty.def)); }
+    const baseUnit=Math.round(s.base*coef);
+    const baseTotal=baseUnit*qty;
+    lines.push({name:s.nom+(s.mensuel?' (mensuel)':''), description:selLabel,
+      qty:qty, unit:(s.qty?('support'+(qty>1?'s':'')):(s.mensuel?'mois':'forfait')),
+      price:baseUnit, total:baseTotal, color:s.couleur, kind:'base'});
+    if(s.mensuel) monthly+=baseTotal; else oneShot+=baseTotal;
+    (s.options||[]).forEach(o=>{
+      if(b.opts && b.opts[o.id]){
+        const q=o.parQty?qty:1, tot=o.prix*q;
+        lines.push({name:o.label, description:'', qty:q, unit:o.parQty?('support'+(q>1?'s':'')):'', price:o.prix, total:tot, color:s.couleur, kind:'opt'});
+        if(s.mensuel) monthly+=tot; else oneShot+=tot;
+      }
+    });
+    if(s.km){
+      const km=Math.min(2000,Math.max(0,parseInt(b.km)||0));
+      if(km>0){ const rate=Number(S.settings.pricePerKm)||0, cost=Math.round(km*rate);
+        lines.push({name:'Frais de déplacement', description:km+' km aller-retour × '+fmtRate(rate)+' /km', qty:1, unit:'', price:cost, total:cost, color:s.couleur, kind:'km'});
+        travel+=cost;
+      }
+    }
+  });
+  (doc.extraLines||[]).forEach(l=>{
+    const tot=(Number(l.qty)||0)*(Number(l.price)||0);
+    lines.push({name:l.name||'—', description:l.description||'', qty:Number(l.qty)||0, unit:l.unit||'', price:Number(l.price)||0, total:tot, color:'#0A1A33', kind:'free'});
+    oneShot+=tot;
+  });
+  let remisePct=0;
+  if(doc.autoRemise!==false){ if(nbServices>=3) remisePct=0.10; else if(nbServices===2) remisePct=0.05; }
+  const remiseAuto=Math.round((oneShot+monthly)*remisePct);
+  let manualRem=0;
+  if(doc.discountType==='pct') manualRem=Math.round((oneShot+monthly)*((Number(doc.discount)||0)/100));
+  else manualRem=Number(doc.discount)||0;
+  const sub=oneShot+monthly;
+  const rem=Math.min(sub, remiseAuto+manualRem);
+  const total=Math.max(0, sub-rem+travel);
+  return {lines, oneShot, monthly, travel, nbServices, remisePct, remiseAuto, manualRem, sub, rem, total};
+}
+function docTotals(doc){ const c=computeDoc(doc); return {sub:c.sub, rem:c.rem, total:c.total}; }
 
 /* ---------- Toast ---------- */
 let toastT;
@@ -405,7 +509,6 @@ function toast(msg){
   t.classList.add('show'); clearTimeout(toastT);
   toastT=setTimeout(()=>t.classList.remove('show'),2200);
 }
-
 /* ---------- Modal ---------- */
 const overlay=document.getElementById('overlay'), modalEl=document.getElementById('modal');
 function openModal(html){ modalEl.innerHTML=html; overlay.classList.add('show'); }
@@ -430,11 +533,11 @@ function go(view,param){
   document.getElementById('pageActions').innerHTML='';
   const c=document.getElementById('content'); c.innerHTML='';
   window.scrollTo(0,0);
-  ({dashboard:renderDashboard,quotes:renderQuotes,invoices:renderInvoices,clients:renderClients,catalog:renderCatalog,company:renderCompany,editor:null})[view](c,param);
+  ({dashboard:renderDashboard,quotes:renderQuotes,invoices:renderInvoices,clients:renderClients,catalog:renderCatalog,company:renderCompany})[view](c,param);
 }
 
 /* ========================================================= */
-/* DASHBOARD                                                  */
+/* STATUTS                                                    */
 /* ========================================================= */
 function invoiceStatus(inv){
   if(inv.paid) return {k:'payée',cls:'b-green'};
@@ -446,6 +549,10 @@ function quoteStatus(q){
   const m={brouillon:'b-grey','envoyé':'b-blue','accepté':'b-green','refusé':'b-red'};
   return {k:q.status||'brouillon',cls:m[q.status]||'b-grey'};
 }
+
+/* ========================================================= */
+/* TABLEAU DE BORD                                            */
+/* ========================================================= */
 function renderDashboard(c){
   const invBilled=S.invoices.filter(i=>i.status!=='brouillon').reduce((a,i)=>a+docTotals(i).total,0);
   const unpaid=S.invoices.filter(i=>!i.paid && i.status!=='brouillon').reduce((a,i)=>a+docTotals(i).total,0);
@@ -462,16 +569,13 @@ function renderDashboard(c){
     '<button class="btn primary" id="qaFact">'+I.plus+'Nouvelle facture</button>';
   document.getElementById('qaDevis').onclick=()=>openEditor('quote');
   document.getElementById('qaFact').onclick=()=>openEditor('invoice');
-
   let html='<div class="grid stats">';
   stats.forEach(s=>html+='<div class="card stat"><div class="k">'+s.k+'</div><div class="v">'+s.v+'</div><div class="sub">'+s.sub+'</div></div>');
   html+='</div>';
-
   const recentInv=[...S.invoices].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
   const recentQ=[...S.quotes].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
-
   html+='<div class="section-title"><h2>Dernières factures</h2><a href="#" id="allInv">Tout voir</a></div>';
-  html+=recentInv.length?docTable(recentInv,'invoice'):emptyBlock(I.invoice,'Aucune facture','Créez votre première facture depuis le catalogue.');
+  html+=recentInv.length?docTable(recentInv,'invoice'):emptyBlock(I.invoice,'Aucune facture','Créez votre première facture.');
   html+='<div class="section-title"><h2>Derniers devis</h2><a href="#" id="allQ">Tout voir</a></div>';
   html+=recentQ.length?docTable(recentQ,'quote'):emptyBlock(I.quote,'Aucun devis','Créez un devis et convertissez-le en facture en un clic.');
   c.innerHTML=html;
@@ -479,16 +583,14 @@ function renderDashboard(c){
   document.getElementById('allQ').onclick=e=>{e.preventDefault();go('quotes');};
   wireDocTable(c);
 }
-function emptyBlock(icon,title,sub){
-  return '<div class="card empty">'+icon+'<h3>'+title+'</h3><div>'+sub+'</div></div>';
-}
+function emptyBlock(icon,title,sub){ return '<div class="card empty">'+icon+'<h3>'+title+'</h3><div>'+sub+'</div></div>'; }
 
-/* ---------- Table générique devis/factures ---------- */
+/* ---------- Table devis/factures ---------- */
 function docTable(list,type){
   let h='<div class="card"><table><thead><tr><th>N°</th><th>Client</th><th>Date</th><th>Statut</th><th class="t-right">Montant</th><th></th></tr></thead><tbody>';
   list.forEach(d=>{
     const cl=clientById(d.clientId);
-    const st= type==='invoice'?invoiceStatus(d):quoteStatus(d);
+    const st=type==='invoice'?invoiceStatus(d):quoteStatus(d);
     const tot=docTotals(d).total;
     h+='<tr data-id="'+d.id+'" data-type="'+type+'">'+
       '<td><span class="doc-no">'+esc(d.number||'—')+'</span></td>'+
@@ -509,19 +611,18 @@ function docTable(list,type){
 }
 function wireDocTable(scope){
   scope.querySelectorAll('tr[data-id]').forEach(tr=>{
-    const id=tr.dataset.id, type=tr.dataset.type;
-    const q=sel=>tr.querySelector(sel);
+    const id=tr.dataset.id, type=tr.dataset.type, q=sel=>tr.querySelector(sel);
     if(q('.act-edit')) q('.act-edit').onclick=()=>openEditor(type,id);
     if(q('.act-print')) q('.act-print').onclick=()=>printDoc(type,id);
     if(q('.act-dup')) q('.act-dup').onclick=()=>duplicateDoc(type,id);
     if(q('.act-del')) q('.act-del').onclick=()=>confirmDelete(type,id);
     if(q('.act-toinv')) q('.act-toinv').onclick=()=>convertToInvoice(id);
-    tr.querySelectorAll('td').forEach((td,idx)=>{ if(idx<4) td.style.cursor='pointer', td.onclick=()=>openEditor(type,id); });
+    tr.querySelectorAll('td').forEach((td,idx)=>{ if(idx<4){ td.style.cursor='pointer'; td.onclick=()=>openEditor(type,id); } });
   });
 }
 
 /* ========================================================= */
-/* LISTES DEVIS / FACTURES                                    */
+/* LISTES                                                     */
 /* ========================================================= */
 function renderQuotes(c){
   document.getElementById('pageActions').innerHTML='<button class="btn primary" id="newQ">'+I.plus+'Nouveau devis</button>';
@@ -542,12 +643,7 @@ function renderInvoices(c){
 /* EDITEUR DEVIS / FACTURE                                    */
 /* ========================================================= */
 let draft=null, draftType='quote', draftIsNew=true;
-function newNumber(type){
-  const y=new Date().getFullYear();
-  const n=(S.counters[type]||0)+1;
-  const pre=type==='quote'?'DEV':'FAC';
-  return pre+'-'+y+'-'+String(n).padStart(4,'0');
-}
+function newNumber(type,n){ const y=new Date().getFullYear(); const pre=type==='quote'?'DEV':'FAC'; return pre+'-'+y+'-'+String(n).padStart(4,'0'); }
 function openEditor(type,id){
   draftType=type;
   if(id){
@@ -556,10 +652,12 @@ function openEditor(type,id){
   }else{
     draftIsNew=true;
     draft={ id:uid(type), number:null, clientId:S.clients[0]?S.clients[0].id:'', date:todayISO(),
-      lines:[], discount:0, discountType:'eur', notes:'', status:'brouillon' };
+      blocs:[], extraLines:[], autoRemise:S.settings.autoRemise!==false, discount:0, discountType:'eur', notes:'', status:'brouillon' };
     if(type==='quote') draft.validUntil=addDays(todayISO(),S.settings.quoteValidityDays);
     else { draft.dueDate=addDays(todayISO(),S.settings.invoiceDueDays); draft.paid=false; draft.paidDate=''; draft.serviceDate=todayISO(); }
   }
+  if(!draft.blocs) draft.blocs=[];
+  if(!draft.extraLines) draft.extraLines=[];
   VIEW='editor'; buildNav();
   document.getElementById('eyebrow').textContent = type==='quote'?'Devis':'Facture';
   document.getElementById('pageTitle').textContent = (draftIsNew?'Nouveau ':'')+(type==='quote'?'devis':'facture')+(draft.number?' · '+draft.number:'');
@@ -568,129 +666,176 @@ function openEditor(type,id){
     '<button class="btn" id="edPrint">'+I.print+'Imprimer</button>'+
     '<button class="btn primary" id="edSave">'+I.save+'Enregistrer</button>';
   document.getElementById('edBack').onclick=()=>go(type==='quote'?'quotes':'invoices');
-  document.getElementById('edSave').onclick=saveDraft;
+  document.getElementById('edSave').onclick=()=>saveDraft();
   document.getElementById('edPrint').onclick=()=>{ if(saveDraft(true)) printDoc(type,draft.id); };
   renderEditor();
 }
 function renderEditor(){
-  const c=document.getElementById('content');
-  const type=draftType;
+  const c=document.getElementById('content'), type=draftType;
   const clientOpts=S.clients.map(cl=>'<option value="'+cl.id+'"'+(cl.id===draft.clientId?' selected':'')+'>'+esc(cl.name)+'</option>').join('');
-  let form='<div class="card panel">';
-  form+='<h3>Informations</h3><div class="form-grid">';
+  let form='<div class="card panel"><h3>Informations</h3><div class="form-grid">';
   form+='<div class="field full"><label>Client</label><div class="hstack" style="flex-wrap:nowrap">'+
         '<select id="f_client" style="flex:1">'+(clientOpts||'<option value="">— aucun client —</option>')+'</select>'+
         '<button class="btn sm" id="f_newclient" style="flex:none">'+I.plus+'Nouveau</button></div></div>';
   form+='<div class="field"><label>Date</label><input type="date" id="f_date" value="'+esc(draft.date)+'"></div>';
   if(type==='quote'){
     form+='<div class="field"><label>Valable jusqu’au</label><input type="date" id="f_valid" value="'+esc(draft.validUntil||'')+'"></div>';
-    form+='<div class="field full"><label>Statut</label><select id="f_status">'+
-      ['brouillon','envoyé','accepté','refusé'].map(s=>'<option'+(draft.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>';
+    form+='<div class="field full"><label>Statut</label><select id="f_status">'+['brouillon','envoyé','accepté','refusé'].map(s=>'<option'+(draft.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>';
   }else{
     form+='<div class="field"><label>Échéance</label><input type="date" id="f_due" value="'+esc(draft.dueDate||'')+'"></div>';
     form+='<div class="field"><label>Date de la prestation</label><input type="date" id="f_service" value="'+esc(draft.serviceDate||'')+'"></div>';
-    form+='<div class="field"><label>Statut</label><select id="f_status">'+
-      ['brouillon','envoyée'].map(s=>'<option'+(draft.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>';
+    form+='<div class="field"><label>Statut</label><select id="f_status">'+['brouillon','envoyée'].map(s=>'<option'+(draft.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>';
     form+='<div class="field"><label>Règlement</label><label class="hstack" style="font-weight:500;margin-top:6px"><input type="checkbox" id="f_paid" '+(draft.paid?'checked':'')+' style="width:auto"> Facture payée</label>'+
           '<input type="date" id="f_paiddate" value="'+esc(draft.paidDate||'')+'" '+(draft.paid?'':'disabled')+' style="margin-top:6px"></div>';
   }
   form+='</div>';
 
-  /* Lignes */
+  /* Prestations en blocs */
   form+='<h3 style="margin-top:22px">Prestations</h3>';
-  form+='<table class="lineTable"><thead><tr><th>Désignation</th><th style="width:66px">Qté</th><th style="width:130px;text-align:right">Prix unit.</th><th style="width:96px;text-align:right">Total</th><th></th></tr></thead><tbody id="lineBody"></tbody></table>';
-  form+='<div class="addline"><select id="catPick" style="flex:1;min-width:180px"><option value="">+ Ajouter depuis le catalogue…</option>'+catalogOptions()+'</select>'+
-        '<button class="btn sm" id="addFree">'+I.plus+'Ligne libre</button></div>';
+  form+='<div class="blocs" id="blocs"></div>';
+  form+='<div class="svcpick"><select id="svcAdd"><option value="">+ Ajouter une prestation principale…</option></select></div>';
+  form+='<div class="addline"><button class="btn sm" id="addFree">'+I.plus+'Ligne libre</button></div>';
+  form+='<div id="extraWrap"></div>';
 
-  /* Remise + totaux */
-  form+='<div class="totbox"><div class="totrow"><span>Remise</span><span class="hstack"><input type="number" id="f_disc" value="'+(draft.discount||0)+'" step="0.01" style="width:90px;text-align:right;font-family:var(--display)">'+
-        '<select id="f_disctype" style="width:auto"><option value="eur"'+(draft.discountType==='eur'?' selected':'')+'>€</option><option value="pct"'+(draft.discountType==='pct'?' selected':'')+'>%</option></select></span></div>';
+  /* Remises + total */
+  form+='<div class="totbox">';
+  form+='<label class="hstack mb0" style="font-weight:500"><input type="checkbox" id="f_autorem" '+(draft.autoRemise!==false?'checked':'')+' style="width:auto"> Remise automatique multi-services (−5 % dès 2, −10 % dès 3)</label>';
+  form+='<div class="totrow" style="margin-top:8px"><span>Remise supplémentaire</span><span class="hstack"><input type="number" id="f_disc" value="'+(draft.discount||0)+'" step="0.01" style="width:90px;text-align:right;font-family:var(--display)"><select id="f_disctype" style="width:auto"><option value="eur"'+(draft.discountType==='eur'?' selected':'')+'>€</option><option value="pct"'+(draft.discountType==='pct'?' selected':'')+'>%</option></select></span></div>';
   form+='<div id="totlines"></div></div>';
 
-  form+='<div class="field full mt16"><label>Notes / conditions particulières <span class="hint">(optionnel — affiché sur le document)</span></label><textarea id="f_notes" placeholder="Ex : acompte de 30 % à la commande, délai de livraison…">'+esc(draft.notes||'')+'</textarea></div>';
+  form+='<div class="field full mt16"><label>Notes / conditions particulières <span class="hint">(optionnel)</span></label><textarea id="f_notes" placeholder="Ex : acompte de 30 % à la commande, délai de livraison…">'+esc(draft.notes||'')+'</textarea></div>';
   form+='</div>';
 
   c.innerHTML='<div class="editor"><div>'+form+'</div><div class="sheetwrap"><div id="doc-preview"></div></div></div>';
 
-  /* Bind champs */
-  const bind=(elid,key,fn)=>{ const el=document.getElementById(elid); if(!el)return; el.oninput=el.onchange=()=>{ draft[key]=fn?fn(el):el.value; refreshPreview(); }; };
+  const bind=(elid,key)=>{ const el=document.getElementById(elid); if(el) el.oninput=el.onchange=()=>{ draft[key]=el.value; refreshCompute(); }; };
   bind('f_client','clientId'); bind('f_date','date');
   if(type==='quote'){ bind('f_valid','validUntil'); bind('f_status','status'); }
   else{
     bind('f_due','dueDate'); bind('f_service','serviceDate'); bind('f_status','status');
     const paid=document.getElementById('f_paid'), pd=document.getElementById('f_paiddate');
-    paid.onchange=()=>{ draft.paid=paid.checked; pd.disabled=!paid.checked; if(paid.checked&&!draft.paidDate){draft.paidDate=todayISO();pd.value=draft.paidDate;} refreshPreview(); };
-    pd.onchange=()=>{ draft.paidDate=pd.value; refreshPreview(); };
+    paid.onchange=()=>{ draft.paid=paid.checked; pd.disabled=!paid.checked; if(paid.checked&&!draft.paidDate){draft.paidDate=todayISO();pd.value=draft.paidDate;} refreshCompute(); };
+    pd.onchange=()=>{ draft.paidDate=pd.value; refreshCompute(); };
   }
-  document.getElementById('f_disc').oninput=e=>{ draft.discount=parseFloat(e.target.value)||0; renderTotals(); refreshPreview(); };
-  document.getElementById('f_disctype').onchange=e=>{ draft.discountType=e.target.value; renderTotals(); refreshPreview(); };
-  document.getElementById('f_notes').oninput=e=>{ draft.notes=e.target.value; refreshPreview(); };
+  document.getElementById('f_autorem').onchange=e=>{ draft.autoRemise=e.target.checked; refreshCompute(); };
+  document.getElementById('f_disc').oninput=e=>{ draft.discount=parseFloat(e.target.value)||0; refreshCompute(); };
+  document.getElementById('f_disctype').onchange=e=>{ draft.discountType=e.target.value; refreshCompute(); };
+  document.getElementById('f_notes').oninput=e=>{ draft.notes=e.target.value; refreshCompute(); };
   document.getElementById('f_newclient').onclick=()=>openClientModal(null,(id)=>{ draft.clientId=id; renderEditor(); });
-  document.getElementById('catPick').onchange=e=>{ if(e.target.value){ addCatalogLine(e.target.value); e.target.value=''; } };
-  document.getElementById('addFree').onclick=()=>{ draft.lines.push({ref:'',name:'',description:'',qty:1,unit:'forfait',price:0}); renderLines(); refreshPreview(); };
+  document.getElementById('svcAdd').onchange=e=>{ if(e.target.value){ addBloc(e.target.value); e.target.value=''; } };
+  document.getElementById('addFree').onclick=()=>{ draft.extraLines.push({name:'',description:'',qty:1,unit:'forfait',price:0}); renderExtra(); refreshCompute(); };
 
-  renderLines(); renderTotals(); refreshPreview();
+  renderBlocs(); renderSvcAdd(); renderExtra(); renderTotals(); refreshPreview();
 }
-function catalogOptions(){
-  return CATS.map(cat=>{
-    const items=S.catalog.filter(i=>i.category===cat.id);
-    if(!items.length) return '';
-    return '<optgroup label="'+esc(cat.name)+'">'+items.map(i=>'<option value="'+i.id+'">'+esc(i.name)+' — '+fmt(i.price)+'</option>').join('')+'</optgroup>';
+function renderSvcAdd(){
+  const sel=document.getElementById('svcAdd'); if(!sel)return;
+  const used=new Set((draft.blocs||[]).map(b=>b.svcId));
+  const opts=S.services.filter(s=>!used.has(s.id)).map(s=>'<option value="'+s.id+'">'+esc(s.nom)+' — dès '+fmt(s.base)+(s.mensuel?'/mois':'')+'</option>').join('');
+  sel.innerHTML='<option value="">+ Ajouter une prestation principale…</option>'+opts;
+  sel.style.display = opts?'':'none';
+}
+function addBloc(svcId){
+  const s=svcById(svcId); if(!s)return;
+  const bloc={svcId, opts:{}};
+  if(s.select) bloc.sel=0;
+  if(s.qty) bloc.qty=s.qty.def;
+  if(s.km) bloc.km=0;
+  draft.blocs.push(bloc);
+  renderBlocs(); renderSvcAdd(); renderTotals(); refreshPreview();
+}
+function blocTotal(b){
+  const s=svcById(b.svcId); if(!s) return 0;
+  let coef=1; if(s.select){ const i=Math.min(s.select.opts.length-1,Math.max(0,b.sel||0)); coef=s.select.opts[i].coef; }
+  let qty=1; if(s.qty){ qty=Math.min(s.qty.max,Math.max(s.qty.min,parseInt(b.qty)||s.qty.def)); }
+  let t=Math.round(s.base*coef)*qty;
+  (s.options||[]).forEach(o=>{ if(b.opts&&b.opts[o.id]) t+=o.prix*(o.parQty?qty:1); });
+  if(s.km){ const km=Math.min(2000,Math.max(0,parseInt(b.km)||0)); t+=Math.round(km*(Number(S.settings.pricePerKm)||0)); }
+  return t;
+}
+function renderBlocs(){
+  const box=document.getElementById('blocs'); if(!box)return;
+  if(!draft.blocs.length){ box.innerHTML='<div style="color:var(--muted);font-size:13px;padding:6px 2px">Aucune prestation. Choisissez une prestation principale ci-dessous, puis cochez ses options.</div>'; return; }
+  box.innerHTML=draft.blocs.map((b,i)=>{
+    const s=svcById(b.svcId); if(!s) return '';
+    let body='';
+    if(s.select){
+      body+='<div class="ctrl-row"><label>'+esc(s.select.label)+'</label><select class="b-sel" data-i="'+i+'">'+
+        s.select.opts.map((o,oi)=>'<option value="'+oi+'"'+((b.sel||0)===oi?' selected':'')+'>'+esc(o.label)+'</option>').join('')+'</select></div>';
+    }
+    if(s.qty){
+      body+='<div class="ctrl-row"><label>'+esc(s.qty.label)+'</label><input type="number" class="num b-qty" data-i="'+i+'" min="'+s.qty.min+'" max="'+s.qty.max+'" value="'+(b.qty||s.qty.def)+'"></div>';
+    }
+    if(s.km){
+      body+='<div class="ctrl-row"><label>Déplacement (km aller-retour)</label><input type="number" class="num b-km" data-i="'+i+'" min="0" max="2000" step="5" value="'+(b.km||0)+'"></div>';
+    }
+    if(s.options&&s.options.length){
+      body+='<div class="opt-list">'+s.options.map(o=>{
+        const on=b.opts&&b.opts[o.id];
+        return '<label class="opt-item'+(on?' on':'')+'" data-i="'+i+'" data-opt="'+o.id+'"><span class="oc"><input type="checkbox" '+(on?'checked':'')+'> <span>'+esc(o.label)+'</span></span>'+
+          '<span class="op">+ '+fmt(o.prix)+(o.parQty?' / support':'')+(s.mensuel?' / mois':'')+'</span></label>';
+      }).join('')+'</div>';
+    }
+    return '<div class="bloc"><div class="bloc-head"><span class="dot" style="background:'+s.couleur+'"></span>'+
+      '<span class="bn">'+esc(s.nom)+'<small>dès '+fmt(s.base)+(s.mensuel?' / mois':'')+'</small></span>'+
+      '<span class="bprice" data-i="'+i+'">'+fmt(blocTotal(b))+'</span>'+
+      '<button class="iconbtn danger b-rm" data-i="'+i+'" title="Retirer">'+I.trash+'</button></div>'+
+      '<div class="bloc-body">'+body+'</div></div>';
   }).join('');
+  box.querySelectorAll('.b-sel').forEach(el=>el.onchange=()=>{ draft.blocs[+el.dataset.i].sel=parseInt(el.value)||0; afterBlocChange(); });
+  box.querySelectorAll('.b-qty').forEach(el=>el.oninput=()=>{ draft.blocs[+el.dataset.i].qty=parseInt(el.value)||1; afterBlocChange(); });
+  box.querySelectorAll('.b-km').forEach(el=>el.oninput=()=>{ draft.blocs[+el.dataset.i].km=parseInt(el.value)||0; afterBlocChange(); });
+  box.querySelectorAll('.opt-item').forEach(el=>{
+    const cb=el.querySelector('input');
+    cb.onchange=()=>{ const i=+el.dataset.i, oid=el.dataset.opt; if(!draft.blocs[i].opts)draft.blocs[i].opts={};
+      if(cb.checked) draft.blocs[i].opts[oid]=true; else delete draft.blocs[i].opts[oid];
+      el.classList.toggle('on',cb.checked); afterBlocChange(); };
+  });
+  box.querySelectorAll('.b-rm').forEach(el=>el.onclick=()=>{ draft.blocs.splice(+el.dataset.i,1); renderBlocs(); renderSvcAdd(); renderTotals(); refreshPreview(); });
 }
-function addCatalogLine(itemId){
-  const it=S.catalog.find(i=>i.id===itemId); if(!it)return;
-  draft.lines.push({ref:it.name,name:it.name,description:it.description,qty:1,unit:it.unit,price:it.price});
-  renderLines(); refreshPreview();
+function afterBlocChange(){
+  // met à jour les sous-totaux de blocs sans reconstruire les inputs (garde le focus)
+  document.querySelectorAll('#blocs .bprice').forEach(el=>{ const i=+el.dataset.i; if(draft.blocs[i]) el.textContent=fmt(blocTotal(draft.blocs[i])); });
+  renderTotals(); refreshPreview();
 }
-function renderLines(){
-  const tb=document.getElementById('lineBody'); if(!tb)return;
-  if(!draft.lines.length){ tb.innerHTML='<tr><td colspan="5" style="color:var(--muted);padding:14px 6px">Aucune ligne. Ajoutez une prestation depuis le catalogue ci-dessous.</td></tr>'; return; }
-  tb.innerHTML=draft.lines.map((l,i)=>{
-    const tot=(Number(l.qty)||0)*(Number(l.price)||0);
-    return '<tr data-i="'+i+'">'+
-      '<td class="lt-desc"><input type="text" class="l-name" value="'+esc(l.name)+'" placeholder="Désignation"><input type="text" class="l-desc" value="'+esc(l.description||'')+'" placeholder="Description (optionnel)" style="margin-top:4px;font-size:12px;color:var(--muted)"></td>'+
-      '<td class="lt-num"><input type="number" class="l-qty" value="'+(l.qty)+'" step="0.5" min="0"><input type="text" class="l-unit" value="'+esc(l.unit||'')+'" placeholder="unité" style="margin-top:4px;font-size:11px;text-align:center"></td>'+
-      '<td class="lt-num"><input type="number" class="l-price" value="'+(l.price)+'" step="0.01" min="0"></td>'+
-      '<td class="lt-num" style="padding-top:12px"><span class="tnum" style="font-weight:600">'+fmt(tot)+'</span></td>'+
-      '<td class="lt-rm" style="padding-top:8px"><button class="iconbtn danger l-rm">'+I.trash+'</button></td></tr>';
-  }).join('');
-  tb.querySelectorAll('tr[data-i]').forEach(tr=>{
+function renderExtra(){
+  const w=document.getElementById('extraWrap'); if(!w)return;
+  if(!draft.extraLines.length){ w.innerHTML=''; return; }
+  let h='<table class="lineTable" style="margin-top:12px"><thead><tr><th>Ligne libre</th><th style="width:60px">Qté</th><th style="width:120px;text-align:right">Prix unit.</th><th style="width:30px"></th></tr></thead><tbody>';
+  h+=draft.extraLines.map((l,i)=>'<tr data-i="'+i+'">'+
+    '<td class="lt-desc"><input type="text" class="e-name" value="'+esc(l.name)+'" placeholder="Désignation"></td>'+
+    '<td class="lt-num"><input type="number" class="e-qty" value="'+(l.qty)+'" step="0.5" min="0"></td>'+
+    '<td class="lt-num"><input type="number" class="e-price" value="'+(l.price)+'" step="0.01" min="0"></td>'+
+    '<td class="lt-rm"><button class="iconbtn danger e-rm">'+I.trash+'</button></td></tr>').join('');
+  h+='</tbody></table>';
+  w.innerHTML=h;
+  w.querySelectorAll('tr[data-i]').forEach(tr=>{
     const i=+tr.dataset.i;
-    const upd=(k,el,num)=>el.oninput=()=>{ draft.lines[i][k]=num?(parseFloat(el.value)||0):el.value; renderLines(); renderTotals(); refreshPreview(); syncFocus(i,k); };
-    // to avoid re-render focus loss, use change on some:
-    tr.querySelector('.l-name').oninput=e=>{draft.lines[i].name=e.target.value; refreshPreview();};
-    tr.querySelector('.l-desc').oninput=e=>{draft.lines[i].description=e.target.value; refreshPreview();};
-    tr.querySelector('.l-unit').oninput=e=>{draft.lines[i].unit=e.target.value; refreshPreview();};
-    tr.querySelector('.l-qty').oninput=e=>{draft.lines[i].qty=parseFloat(e.target.value)||0; updateLineTotal(tr,i); renderTotals(); refreshPreview();};
-    tr.querySelector('.l-price').oninput=e=>{draft.lines[i].price=parseFloat(e.target.value)||0; updateLineTotal(tr,i); renderTotals(); refreshPreview();};
-    tr.querySelector('.l-rm').onclick=()=>{ draft.lines.splice(i,1); renderLines(); renderTotals(); refreshPreview(); };
+    tr.querySelector('.e-name').oninput=e=>{ draft.extraLines[i].name=e.target.value; refreshPreview(); };
+    tr.querySelector('.e-qty').oninput=e=>{ draft.extraLines[i].qty=parseFloat(e.target.value)||0; renderTotals(); refreshPreview(); };
+    tr.querySelector('.e-price').oninput=e=>{ draft.extraLines[i].price=parseFloat(e.target.value)||0; renderTotals(); refreshPreview(); };
+    tr.querySelector('.e-rm').onclick=()=>{ draft.extraLines.splice(i,1); renderExtra(); renderTotals(); refreshPreview(); };
   });
 }
-function updateLineTotal(tr,i){
-  const tot=(Number(draft.lines[i].qty)||0)*(Number(draft.lines[i].price)||0);
-  const span=tr.querySelector('td.lt-num:nth-child(4) span'); if(span) span.textContent=fmt(tot);
-}
-function syncFocus(){}
 function renderTotals(){
   const el=document.getElementById('totlines'); if(!el)return;
-  const t=docTotals(draft);
-  let h='';
-  h+='<div class="totrow"><span>Sous-total</span><span class="tnum">'+fmt(t.sub)+'</span></div>';
-  if(t.rem>0) h+='<div class="totrow"><span>Remise</span><span class="tnum" style="color:var(--warn)">− '+fmt(t.rem)+'</span></div>';
-  h+='<div class="totrow big"><span>'+(draftType==='quote'?'Total':'Net à payer')+'</span><span class="tnum">'+fmt(t.total)+'</span></div>';
+  const c=computeDoc(draft);
+  let h='<div class="totrow" style="margin-top:8px"><span>Sous-total</span><span class="tnum">'+fmt(c.sub)+'</span></div>';
+  if(c.remiseAuto>0) h+='<div class="totrow"><span>Remise multi-services (−'+Math.round(c.remisePct*100)+' %)</span><span class="tnum" style="color:var(--warn)">− '+fmt(c.remiseAuto)+'</span></div>';
+  if(c.manualRem>0) h+='<div class="totrow"><span>Remise supplémentaire</span><span class="tnum" style="color:var(--warn)">− '+fmt(c.manualRem)+'</span></div>';
+  if(c.travel>0) h+='<div class="totrow"><span>Frais de déplacement</span><span class="tnum">+ '+fmt(c.travel)+'</span></div>';
+  h+='<div class="totrow big"><span>'+(draftType==='quote'?'Total estimé':'Net à payer')+'</span><span class="tnum">'+fmt(c.total)+'</span></div>';
+  if(c.monthly>0) h+='<div style="font-size:11px;color:var(--muted);text-align:right">dont '+fmt(c.monthly)+' / mois (abonnement)</div>';
   h+='<div style="font-size:11px;color:var(--muted);text-align:right">TVA non applicable, art. 293 B du CGI</div>';
   el.innerHTML=h;
 }
-function refreshPreview(){
-  const p=document.getElementById('doc-preview'); if(!p)return;
-  p.innerHTML=docHTML(draft,draftType);
-}
+function refreshPreview(){ const p=document.getElementById('doc-preview'); if(p) p.innerHTML=docHTML(draft,draftType); }
+function refreshCompute(){ renderTotals(); refreshPreview(); }
 function saveDraft(silent){
   if(!draft.clientId){ toast('Choisissez un client avant d’enregistrer.'); if(!silent) return false; }
   const store=draftType==='quote'?S.quotes:S.invoices;
   if(draftIsNew){
-    if(!draft.number){ S.counters[draftType]=(S.counters[draftType]||0)+1; draft.number=newNumber(draftType).replace(/\d+$/,String(S.counters[draftType]).padStart(4,'0')); }
+    S.counters[draftType]=(S.counters[draftType]||0)+1;
+    draft.number=newNumber(draftType,S.counters[draftType]);
     store.push(draft); draftIsNew=false;
   }else{
     const idx=store.findIndex(d=>d.id===draft.id);
@@ -701,21 +846,20 @@ function saveDraft(silent){
   document.getElementById('pageTitle').textContent=(draftType==='quote'?'Devis':'Facture')+' · '+draft.number;
   return true;
 }
-
-/* ---------- Convertir devis -> facture ---------- */
 function convertToInvoice(quoteId){
   const q=S.quotes.find(x=>x.id===quoteId); if(!q)return;
   openModal(
     '<div class="modal-head"><h3>Transformer en facture</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
     '<div class="modal-body"><p style="margin:0 0 6px">Créer une facture à partir du devis <b>'+esc(q.number)+'</b> ?</p>'+
-    '<p style="color:var(--muted);margin:0">Le devis sera marqué « accepté ». La facture reprendra le client et les lignes, avec un nouveau numéro.</p></div>'+
+    '<p style="color:var(--muted);margin:0">Le devis sera marqué « accepté ». La facture reprendra le client et les prestations, avec un nouveau numéro.</p></div>'+
     '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" id="doConv">Créer la facture</button></div>'
   );
   document.getElementById('doConv').onclick=()=>{
     S.counters.invoice=(S.counters.invoice||0)+1;
-    const inv={ id:uid('invoice'), number:newNumber('invoice').replace(/\d+$/,String(S.counters.invoice).padStart(4,'0')),
+    const inv={ id:uid('invoice'), number:newNumber('invoice',S.counters.invoice),
       clientId:q.clientId, date:todayISO(), serviceDate:q.date, dueDate:addDays(todayISO(),S.settings.invoiceDueDays),
-      lines:JSON.parse(JSON.stringify(q.lines)), discount:q.discount, discountType:q.discountType,
+      blocs:JSON.parse(JSON.stringify(q.blocs||[])), extraLines:JSON.parse(JSON.stringify(q.extraLines||[])),
+      autoRemise:q.autoRemise, discount:q.discount, discountType:q.discountType,
       notes:q.notes, status:'envoyée', paid:false, paidDate:'', fromQuote:q.number };
     S.invoices.push(inv); q.status='accepté'; save(); closeModal();
     toast('Facture '+inv.number+' créée'); openEditor('invoice',inv.id);
@@ -725,54 +869,44 @@ function duplicateDoc(type,id){
   const store=type==='quote'?S.quotes:S.invoices;
   const src=store.find(d=>d.id===id); if(!src)return;
   const copy=JSON.parse(JSON.stringify(src));
-  copy.id=uid(type); copy.date=todayISO(); copy.status='brouillon'; copy.number=null; copy.paid=false; copy.paidDate=''; copy.fromQuote=undefined;
+  copy.id=uid(type); copy.date=todayISO(); copy.status='brouillon'; copy.paid=false; copy.paidDate=''; copy.fromQuote=undefined;
   if(type==='quote') copy.validUntil=addDays(todayISO(),S.settings.quoteValidityDays);
   else copy.dueDate=addDays(todayISO(),S.settings.invoiceDueDays);
   S.counters[type]=(S.counters[type]||0)+1;
-  copy.number=newNumber(type).replace(/\d+$/,String(S.counters[type]).padStart(4,'0'));
+  copy.number=newNumber(type,S.counters[type]);
   store.push(copy); save(); toast('Copie créée · '+copy.number); go(type==='quote'?'quotes':'invoices');
 }
 function confirmDelete(type,id){
-  const store=type==='quote'?S.quotes:S.invoices;
-  const d=store.find(x=>x.id===id); if(!d)return;
+  const store=type==='quote'?S.quotes:S.invoices, d=store.find(x=>x.id===id); if(!d)return;
   openModal(
     '<div class="modal-head"><h3>Supprimer '+(type==='quote'?'le devis':'la facture')+' ?</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
     '<div class="modal-body"><p style="margin:0">Le document <b>'+esc(d.number)+'</b> sera définitivement supprimé. Cette action est irréversible.</p>'+
-    (type==='invoice'?'<p style="color:var(--warn);font-size:12.5px;margin:10px 0 0">Attention : la numérotation des factures doit rester continue. Ne supprimez une facture que si elle n’a pas été transmise au client.</p>':'')+'</div>'+
+    (type==='invoice'?'<p style="color:var(--warn);font-size:12.5px;margin:10px 0 0">La numérotation des factures doit rester continue. Ne supprimez une facture que si elle n’a pas été transmise.</p>':'')+'</div>'+
     '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn danger" id="doDel">Supprimer</button></div>'
   );
-  document.getElementById('doDel').onclick=()=>{
-    const idx=store.findIndex(x=>x.id===id); store.splice(idx,1); save(); closeModal(); toast('Supprimé'); go(type==='quote'?'quotes':'invoices');
-  };
+  document.getElementById('doDel').onclick=()=>{ store.splice(store.findIndex(x=>x.id===id),1); save(); closeModal(); toast('Supprimé'); go(type==='quote'?'quotes':'invoices'); };
 }
 
-/* ---------- Rendu du document (feuille) ---------- */
+/* ---------- Rendu du document (feuille imprimable) ---------- */
 function docHTML(doc,type){
-  const co=S.company, cl=clientById(doc.clientId), t=docTotals(doc);
-  const isQ=type==='quote';
-  const coLines=[co.address, [co.zip,co.city].filter(Boolean).join(' '),
-    co.siret?('SIRET '+co.siret):'', co.email, co.phone].filter(Boolean);
-  const clLines= cl?[cl.contact, cl.address, [cl.zip,cl.city].filter(Boolean).join(' '), cl.siret?('SIRET '+cl.siret):'', cl.email].filter(Boolean):[];
-  let rows=(doc.lines||[]).map(l=>{
-    const lt=(Number(l.qty)||0)*(Number(l.price)||0);
-    return '<tr><td><div class="d-name">'+esc(l.name||'—')+'</div>'+(l.description?'<div class="d-desc">'+nl2br(l.description)+'</div>':'')+'</td>'+
-      '<td class="r">'+esc(l.qty)+(l.unit?' '+esc(l.unit):'')+'</td>'+
-      '<td class="r">'+fmt(l.price)+'</td>'+
-      '<td class="r">'+fmt(lt)+'</td></tr>';
-  }).join('');
+  const co=S.company, cl=clientById(doc.clientId), c=computeDoc(doc), isQ=type==='quote';
+  const coLines=[co.address,[co.zip,co.city].filter(Boolean).join(' '),co.siret?('SIRET '+co.siret):'',co.email,co.phone].filter(Boolean);
+  const clLines= cl?[cl.contact,cl.address,[cl.zip,cl.city].filter(Boolean).join(' '),cl.siret?('SIRET '+cl.siret):'',cl.email].filter(Boolean):[];
+  let rows=c.lines.map(l=>
+    '<tr><td><div class="d-name">'+esc(l.name||'—')+'</div>'+(l.description?'<div class="d-desc">'+nl2br(l.description)+'</div>':'')+'</td>'+
+    '<td class="r">'+esc(l.qty)+(l.unit?' '+esc(l.unit):'')+'</td>'+
+    '<td class="r">'+fmt(l.price)+'</td>'+
+    '<td class="r">'+fmt(l.total)+'</td></tr>').join('');
   if(!rows) rows='<tr><td colspan="4" style="color:#9aa;padding:16px">—</td></tr>';
-
   let dateBox='';
-  if(isQ){
-    dateBox='<div><b>Date</b> · '+fmtDate(doc.date)+'</div>'+(doc.validUntil?'<div><b>Valable jusqu’au</b> · '+fmtDate(doc.validUntil)+'</div>':'');
-  }else{
+  if(isQ){ dateBox='<div><b>Date</b> · '+fmtDate(doc.date)+'</div>'+(doc.validUntil?'<div><b>Valable jusqu’au</b> · '+fmtDate(doc.validUntil)+'</div>':''); }
+  else{
     dateBox='<div><b>Date d’émission</b> · '+fmtDate(doc.date)+'</div>'+
       (doc.serviceDate?'<div><b>Prestation</b> · '+fmtDate(doc.serviceDate)+'</div>':'')+
       (doc.dueDate?'<div><b>Échéance</b> · '+fmtDate(doc.dueDate)+'</div>':'')+
-      (doc.paid?'<div style="color:#17795E"><b>Payée</b> · '+fmtDate(doc.paidDate)+'</div>':'')+
+      (doc.paid?'<div style="color:#0E7A5A"><b>Payée</b> · '+fmtDate(doc.paidDate)+'</div>':'')+
       (doc.fromQuote?'<div style="color:#8A8F9C">Réf. devis '+esc(doc.fromQuote)+'</div>':'');
   }
-
   let h='<div class="sheet">';
   h+='<div class="doc-top"><div>'+
       (co.logo?'<img class="logo" src="'+co.logo+'" alt="logo"><div style="height:8px"></div>':'')+
@@ -785,15 +919,16 @@ function docHTML(doc,type){
       '<div class="datebox">'+dateBox+'</div></div>';
   h+='<table class="doc-items"><thead><tr><th>Désignation</th><th class="r">Qté</th><th class="r">Prix unit.</th><th class="r">Montant</th></tr></thead><tbody>'+rows+'</tbody></table>';
   h+='<div class="sums"><div class="sbox">'+
-      '<div class="srow"><span>Sous-total</span><span class="tnum">'+fmt(t.sub)+'</span></div>'+
-      (t.rem>0?'<div class="srow"><span>Remise</span><span class="tnum">− '+fmt(t.rem)+'</span></div>':'')+
-      '<div class="stotal"><span>'+(isQ?'Total':'Net à payer')+'</span><span class="tnum">'+fmt(t.total)+'</span></div></div></div>';
+      '<div class="srow"><span>Sous-total</span><span class="tnum">'+fmt(c.sub)+'</span></div>'+
+      (c.remiseAuto>0?'<div class="srow"><span>Remise multi-services (−'+Math.round(c.remisePct*100)+' %)</span><span class="tnum">− '+fmt(c.remiseAuto)+'</span></div>':'')+
+      (c.manualRem>0?'<div class="srow"><span>Remise supplémentaire</span><span class="tnum">− '+fmt(c.manualRem)+'</span></div>':'')+
+      (c.travel>0?'<div class="srow"><span>Frais de déplacement</span><span class="tnum">+ '+fmt(c.travel)+'</span></div>':'')+
+      '<div class="stotal"><span>'+(isQ?'Total estimé':'Net à payer')+'</span><span class="tnum">'+fmt(c.total)+'</span></div>'+
+      (c.monthly>0?'<div class="srow" style="color:var(--muted);font-size:11px;margin-top:4px"><span>dont abonnement mensuel</span><span class="tnum">'+fmt(c.monthly)+' / mois</span></div>':'')+
+      '</div></div>';
   h+='<div class="tva-note">'+esc(co.legalMention||'TVA non applicable, article 293 B du CGI.')+'</div>';
   if(doc.notes) h+='<div class="notes"><b>Notes :</b> '+nl2br(doc.notes)+'</div>';
-  if(isQ){
-    h+='<div class="signbox"><div class="sb"><b>Bon pour accord</b>Date et signature du client :</div></div>';
-  }
-  // Legal footer
+  if(isQ) h+='<div class="signbox"><div class="sb"><b>Bon pour accord</b>Date et signature du client :</div></div>';
   let legal=[];
   if(isQ && co.quoteFooter) legal.push(co.quoteFooter);
   if(!isQ){ if(co.paymentTerms) legal.push(co.paymentTerms); if(co.latePenalty) legal.push(co.latePenalty); }
@@ -805,8 +940,7 @@ function docHTML(doc,type){
 }
 function printDoc(type,id){
   const store=type==='quote'?S.quotes:S.invoices;
-  const doc=store.find(d=>d.id===id)|| (draft&&draft.id===id?draft:null);
-  if(!doc)return;
+  const doc=store.find(d=>d.id===id)||(draft&&draft.id===id?draft:null); if(!doc)return;
   document.getElementById('print-root').innerHTML=docHTML(doc,type);
   setTimeout(()=>window.print(),60);
 }
@@ -826,14 +960,12 @@ function renderClients(c){
        '<td class="t-right tnum">'+docs+'</td>'+
        '<td><div class="rowActions"><button class="iconbtn c-edit">'+I.edit+'</button><button class="iconbtn danger c-del">'+I.trash+'</button></div></td></tr>';
   });
-  h+='</tbody></table></div>';
-  c.innerHTML=h;
+  h+='</tbody></table></div>'; c.innerHTML=h;
   c.querySelectorAll('tr[data-id]').forEach(tr=>{
     const id=tr.dataset.id;
     tr.querySelector('.c-edit').onclick=()=>openClientModal(id);
     tr.querySelector('.c-del').onclick=()=>{
-      const used=S.quotes.some(q=>q.clientId===id)||S.invoices.some(i=>i.clientId===id);
-      if(used){ toast('Client utilisé dans des documents — suppression bloquée.'); return; }
+      if(S.quotes.some(q=>q.clientId===id)||S.invoices.some(i=>i.clientId===id)){ toast('Client utilisé dans des documents — suppression bloquée.'); return; }
       S.clients=S.clients.filter(x=>x.id!==id); save(); go('clients');
     };
   });
@@ -859,63 +991,53 @@ function openClientModal(id,cb){
     const name=g('c_name'); if(!name){ toast('Le nom est obligatoire.'); return; }
     const data={name,contact:g('c_contact'),address:g('c_address'),zip:g('c_zip'),city:g('c_city'),email:g('c_email'),phone:g('c_phone'),siret:g('c_siret')};
     let newId;
-    if(id){ Object.assign(clientById(id),data); newId=id; }
-    else { newId=uid('cli'); S.clients.push(Object.assign({id:newId},data)); }
+    if(id){ Object.assign(clientById(id),data); newId=id; } else { newId=uid('cli'); S.clients.push(Object.assign({id:newId},data)); }
     save(); closeModal(); toast('Client enregistré');
     if(cb) cb(newId); else if(VIEW==='clients') go('clients');
   };
 }
 
 /* ========================================================= */
-/* CATALOGUE                                                  */
+/* PRESTATIONS (catalogue éditable)                           */
 /* ========================================================= */
 function renderCatalog(c){
-  document.getElementById('pageActions').innerHTML='<button class="btn primary" id="newIt">'+I.plus+'Nouvelle prestation</button>';
-  document.getElementById('newIt').onclick=()=>openItemModal();
-  let h='<div style="font-size:12.5px;color:var(--muted);margin-bottom:16px">Prix indicatifs de départ — ajustez-les à vos tarifs. Ces prestations alimentent la création de devis et factures.</div>';
-  CATS.forEach(cat=>{
-    const items=S.catalog.filter(i=>i.category===cat.id);
-    h+='<div class="card catgroup"><div class="ch"><span class="dot" style="background:'+cat.color+'"></span>'+esc(cat.name)+' <span class="cnt">· '+items.length+'</span></div>';
-    if(items.length){
-      h+='<table><tbody>';
-      items.forEach(it=>{
-        h+='<tr data-id="'+it.id+'"><td style="width:55%"><div class="cell-strong">'+esc(it.name)+'</div>'+(it.description?'<div class="cell-sub">'+esc(it.description)+'</div>':'')+'</td>'+
-           '<td class="cell-sub">/ '+esc(it.unit||'forfait')+'</td>'+
-           '<td class="t-right tnum cell-strong">'+fmt(it.price)+'</td>'+
-           '<td><div class="rowActions"><button class="iconbtn it-edit">'+I.edit+'</button><button class="iconbtn danger it-del">'+I.trash+'</button></div></td></tr>';
+  document.getElementById('pageActions').innerHTML='<button class="btn primary" id="saveCat">'+I.save+'Enregistrer les tarifs</button>';
+  let h='<div style="font-size:12.5px;color:var(--muted);margin-bottom:16px">Vos 6 prestations, reprises de votre simulateur en ligne. Ajustez les prix, coefficients et options — ils alimentent la création de devis et factures.</div>';
+  h+='<div class="card panel" style="margin-bottom:16px"><div class="hstack"><label style="font-family:var(--display);font-weight:600;color:var(--navy);font-size:13px">Frais de déplacement (drone)</label>'+
+     '<input type="number" id="kmrate" value="'+(S.settings.pricePerKm)+'" step="0.05" min="0" style="width:110px;text-align:right;font-family:var(--display)"> <span style="color:var(--muted);font-size:12.5px">€ / km (aller-retour)</span></div></div>';
+  S.services.forEach((s,si)=>{
+    h+='<div class="card catgroup"><div class="ch"><span class="dot" style="background:'+s.couleur+'"></span><span style="flex:1">'+esc(s.nom)+'</span>'+
+       '<span class="catbase">dès <input type="number" class="num s-base" data-si="'+si+'" value="'+s.base+'" step="10" min="0"> €'+(s.mensuel?' / mois':'')+'</span></div>';
+    h+='<div style="padding:0 16px 14px">';
+    h+='<div style="font-size:12px;color:var(--muted);margin:2px 0 10px">'+esc(s.desc)+'</div>';
+    if(s.select){
+      h+='<div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+esc(s.select.label)+' (coefficients)</div>';
+      s.select.opts.forEach((o,oi)=>{
+        h+='<div class="optedit"><input type="text" class="lbl sel-lbl" data-si="'+si+'" data-oi="'+oi+'" value="'+esc(o.label)+'"><span style="color:var(--muted);font-size:12px">×</span><input type="number" class="pr sel-coef" data-si="'+si+'" data-oi="'+oi+'" value="'+o.coef+'" step="0.1" min="0"></div>';
       });
-      h+='</tbody></table>';
-    } else h+='<div style="padding:10px 16px;color:var(--muted);font-size:12.5px">Aucune prestation.</div>';
-    h+='</div>';
+    }
+    if(s.qty) h+='<div style="font-size:12px;color:var(--muted);margin:8px 0">Facturé par support · '+esc(s.qty.label)+' ('+s.qty.min+' à '+s.qty.max+')</div>';
+    if(s.km) h+='<div style="font-size:12px;color:var(--muted);margin:8px 0">Frais de déplacement au km (voir tarif en haut de page)</div>';
+    h+='<div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 6px">Options</div>';
+    (s.options||[]).forEach((o,oi)=>{
+      h+='<div class="optedit"><input type="text" class="lbl o-lbl" data-si="'+si+'" data-oi="'+oi+'" value="'+esc(o.label)+'">'+
+         '<input type="number" class="pr o-prix" data-si="'+si+'" data-oi="'+oi+'" value="'+o.prix+'" step="10" min="0"> €'+
+         (o.parQty?'<span style="font-size:11px;color:var(--muted)">/supp.</span>':'')+
+         '<button class="iconbtn danger o-del" data-si="'+si+'" data-oi="'+oi+'">'+I.trash+'</button></div>';
+    });
+    h+='<button class="btn sm o-add" data-si="'+si+'" style="margin-top:8px">'+I.plus+'Ajouter une option</button>';
+    h+='</div></div>';
   });
   c.innerHTML=h;
-  c.querySelectorAll('tr[data-id]').forEach(tr=>{
-    const id=tr.dataset.id;
-    tr.querySelector('.it-edit').onclick=()=>openItemModal(id);
-    tr.querySelector('.it-del').onclick=()=>{ S.catalog=S.catalog.filter(x=>x.id!==id); save(); go('catalog'); };
-  });
-}
-function openItemModal(id){
-  const it=id?S.catalog.find(x=>x.id===id):{category:CATS[0].id,name:'',description:'',price:0,unit:'forfait'};
-  openModal(
-    '<div class="modal-head"><h3>'+(id?'Modifier la prestation':'Nouvelle prestation')+'</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
-    '<div class="modal-body"><div class="form-grid">'+
-      '<div class="field full"><label>Catégorie</label><select id="it_cat">'+CATS.map(x=>'<option value="'+x.id+'"'+(x.id===it.category?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>'+
-      '<div class="field full"><label>Nom *</label><input type="text" id="it_name" value="'+esc(it.name)+'"></div>'+
-      '<div class="field full"><label>Description</label><textarea id="it_desc">'+esc(it.description||'')+'</textarea></div>'+
-      '<div class="field"><label>Prix (€)</label><input type="number" id="it_price" value="'+it.price+'" step="0.01" min="0"></div>'+
-      '<div class="field"><label>Unité</label><input type="text" id="it_unit" value="'+esc(it.unit||'forfait')+'" placeholder="forfait, jour, page…"></div>'+
-    '</div><div style="font-size:11.5px;color:var(--muted)">Prix net — TVA non applicable (auto-entrepreneur).</div></div>'+
-    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" id="it_save">Enregistrer</button></div>'
-  );
-  document.getElementById('it_save').onclick=()=>{
-    const g=x=>document.getElementById(x).value;
-    const name=g('it_name').trim(); if(!name){ toast('Le nom est obligatoire.'); return; }
-    const data={category:g('it_cat'),name,description:g('it_desc').trim(),price:parseFloat(g('it_price'))||0,unit:g('it_unit').trim()||'forfait'};
-    if(id) Object.assign(S.catalog.find(x=>x.id===id),data);
-    else S.catalog.push(Object.assign({id:uid('it')},data));
-    save(); closeModal(); go('catalog');
-  };
+  document.getElementById('kmrate').oninput=e=>{ S.settings.pricePerKm=parseFloat(e.target.value)||0; };
+  c.querySelectorAll('.s-base').forEach(el=>el.oninput=()=>{ S.services[+el.dataset.si].base=parseFloat(el.value)||0; });
+  c.querySelectorAll('.sel-lbl').forEach(el=>el.oninput=()=>{ S.services[+el.dataset.si].select.opts[+el.dataset.oi].label=el.value; });
+  c.querySelectorAll('.sel-coef').forEach(el=>el.oninput=()=>{ S.services[+el.dataset.si].select.opts[+el.dataset.oi].coef=parseFloat(el.value)||1; });
+  c.querySelectorAll('.o-lbl').forEach(el=>el.oninput=()=>{ S.services[+el.dataset.si].options[+el.dataset.oi].label=el.value; });
+  c.querySelectorAll('.o-prix').forEach(el=>el.oninput=()=>{ S.services[+el.dataset.si].options[+el.dataset.oi].prix=parseFloat(el.value)||0; });
+  c.querySelectorAll('.o-del').forEach(el=>el.onclick=()=>{ S.services[+el.dataset.si].options.splice(+el.dataset.oi,1); save(); go('catalog'); });
+  c.querySelectorAll('.o-add').forEach(el=>el.onclick=()=>{ const s=S.services[+el.dataset.si]; s.options.push({id:'opt'+uid(),label:'Nouvelle option',prix:0}); save(); go('catalog'); });
+  document.getElementById('saveCat').onclick=()=>{ save(); toast('Tarifs enregistrés'); };
 }
 
 /* ========================================================= */
@@ -927,7 +1049,6 @@ function renderCompany(c){
   const F=(id,lbl,val,ph='',hint='')=>'<div class="field"><label>'+lbl+(hint?' <span class="hint">'+hint+'</span>':'')+'</label><input type="text" id="'+id+'" value="'+esc(val||'')+'" placeholder="'+esc(ph)+'"></div>';
   const T=(id,lbl,val)=>'<div class="field full"><label>'+lbl+'</label><textarea id="'+id+'">'+esc(val||'')+'</textarea></div>';
   let h='<div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;align-items:start">';
-  // colonne gauche : identité
   h+='<div class="card panel"><h3>Identité</h3><div class="form-grid">'+
       '<div class="field full"><label>Logo</label><div class="hstack">'+
         (co.logo?'<img src="'+co.logo+'" style="height:44px;border:1px solid var(--line);border-radius:6px;padding:4px;background:#fff">':'<span style="color:var(--muted);font-size:12.5px">Aucun logo</span>')+
@@ -942,31 +1063,23 @@ function renderCompany(c){
       '<div class="field full"><label>Site web</label><input type="text" id="co_web" value="'+esc(co.website)+'"></div>'+
       F('co_iban','IBAN',co.iban)+F('co_bic','BIC',co.bic)+
     '</div></div>';
-  // colonne droite : mentions
   h+='<div class="card panel"><h3>Mentions légales & conditions</h3>'+
       T('co_legal','Mention TVA',co.legalMention)+
       T('co_pay','Conditions de règlement (factures)',co.paymentTerms)+
       T('co_late','Pénalités de retard (factures)',co.latePenalty)+
       T('co_qf','Mention de bas de devis',co.quoteFooter)+
       '<div style="font-size:11.5px;color:var(--muted)">Statut auto-entrepreneur : pas de TVA facturée. La mention « TVA non applicable, art. 293 B du CGI » est obligatoire sur chaque document.</div>'+
-    '</div>';
-  h+='</div>';
+    '</div></div>';
   c.innerHTML=h;
-
-  // logo upload
   const lf=document.getElementById('logoFile');
   document.getElementById('logoBtn').onclick=()=>lf.click();
   lf.onchange=()=>{ const f=lf.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ S.company.logo=r.result; save(); go('company'); }; r.readAsDataURL(f); };
   if(document.getElementById('logoDel')) document.getElementById('logoDel').onclick=()=>{ S.company.logo=''; save(); go('company'); };
-
   document.getElementById('saveCo').onclick=()=>{
     const g=x=>{const e=document.getElementById(x); return e?e.value.trim():'';};
-    Object.assign(S.company,{
-      name:g('co_name'),tagline:g('co_tag'),address:g('co_address'),zip:g('co_zip'),city:g('co_city'),
+    Object.assign(S.company,{ name:g('co_name'),tagline:g('co_tag'),address:g('co_address'),zip:g('co_zip'),city:g('co_city'),
       siret:g('co_siret'),ape:g('co_ape'),email:g('co_email'),phone:g('co_phone'),website:g('co_web'),
-      iban:g('co_iban'),bic:g('co_bic'),legalMention:g('co_legal'),paymentTerms:g('co_pay'),
-      latePenalty:g('co_late'),quoteFooter:g('co_qf')
-    });
+      iban:g('co_iban'),bic:g('co_bic'),legalMention:g('co_legal'),paymentTerms:g('co_pay'),latePenalty:g('co_late'),quoteFooter:g('co_qf') });
     save(); toast('Informations enregistrées');
   };
 }
@@ -976,27 +1089,59 @@ function renderCompany(c){
 /* ========================================================= */
 function exportData(){
   const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download='tbsn-facturation-'+todayISO()+'.json'; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  toast('Sauvegarde téléchargée');
+  setTimeout(()=>URL.revokeObjectURL(url),1000); toast('Sauvegarde téléchargée');
 }
 document.getElementById('importFile').onchange=function(){
   const f=this.files[0]; if(!f)return; const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result);
-      if(!d.company||!Array.isArray(d.catalog)) throw 0;
-      S=d; save(); go('dashboard'); toast('Données restaurées');
-    }catch(e){ toast('Fichier invalide.'); } this.value=''; };
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.company||!Array.isArray(d.services)) throw 0; S=d; if(!S.settings)S.settings={pricePerKm:0.5,quoteValidityDays:30,invoiceDueDays:30}; save(); go('dashboard'); toast('Données restaurées'); }catch(e){ toast('Fichier invalide.'); } this.value=''; };
   r.readAsText(f);
 };
 document.getElementById('btnExport').innerHTML=I.down+'Sauvegarder';
 document.getElementById('btnImport').innerHTML=I.up+'Restaurer';
+document.getElementById('btnReset').innerHTML=I.trash+'Réinitialiser';
 document.getElementById('btnExport').onclick=exportData;
 document.getElementById('btnImport').onclick=()=>document.getElementById('importFile').click();
+document.getElementById('btnReset').onclick=openResetModal;
+
+/* ---------- Réinitialisation ---------- */
+function openResetModal(){
+  const nq=S.quotes.length, ni=S.invoices.length, nc=S.clients.length;
+  openModal(
+    '<div class="modal-head"><h3>Réinitialiser</h3><button class="iconbtn" onclick="closeModal()">'+I.x+'</button></div>'+
+    '<div class="modal-body">'+
+      '<p style="margin:0 0 14px;color:var(--muted)">Vous avez actuellement <b style="color:var(--navy)">'+nq+' devis</b>, <b style="color:var(--navy)">'+ni+' facture(s)</b> et <b style="color:var(--navy)">'+nc+' client(s)</b>.</p>'+
+      '<div class="field"><label>Que voulez-vous effacer ?</label>'+
+        '<label class="opt-item on" style="cursor:pointer"><span class="oc"><input type="radio" name="rst" value="docs" checked style="width:17px;height:17px;accent-color:var(--orange)"> <span><b>Les devis et factures uniquement</b><br><small style="color:var(--muted)">La numérotation repart à 0001. Clients, prestations et tarifs conservés.</small></span></span></label>'+
+        '<label class="opt-item" style="cursor:pointer"><span class="oc"><input type="radio" name="rst" value="all" style="width:17px;height:17px;accent-color:var(--orange)"> <span><b>Tout remettre à zéro</b><br><small style="color:var(--muted)">Documents, clients, tarifs et informations d’entreprise reviennent aux réglages d’origine.</small></span></span></label>'+
+      '</div>'+
+      '<div style="background:var(--warn-soft);color:var(--warn);border-radius:9px;padding:11px 13px;font-size:12.5px;line-height:1.5;margin-top:6px">'+
+        '<b>Action irréversible.</b> Pensez à cliquer sur « Sauvegarder » avant, si vous voulez pouvoir revenir en arrière. À n’utiliser que pour effacer des tests : une facture réellement transmise à un client doit être conservée.'+
+      '</div>'+
+      '<div class="field mt16"><label>Pour confirmer, tapez <b>EFFACER</b></label><input type="text" id="rstConfirm" placeholder="EFFACER" autocomplete="off"></div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn danger" id="doReset" disabled style="opacity:.5">Réinitialiser</button></div>'
+  );
+  modalEl.querySelectorAll('input[name=rst]').forEach(r=>r.onchange=()=>{
+    modalEl.querySelectorAll('.opt-item').forEach(l=>l.classList.toggle('on', l.querySelector('input').checked));
+  });
+  const inp=document.getElementById('rstConfirm'), btn=document.getElementById('doReset');
+  inp.oninput=()=>{ const ok=inp.value.trim().toUpperCase()==='EFFACER'; btn.disabled=!ok; btn.style.opacity=ok?1:.5; };
+  btn.onclick=()=>{
+    if(inp.value.trim().toUpperCase()!=='EFFACER') return;
+    const mode=modalEl.querySelector('input[name=rst]:checked').value;
+    if(mode==='all'){ S=defaultState(); }
+    else { S.quotes=[]; S.invoices=[]; S.counters={quote:0,invoice:0}; }
+    save(); closeModal(); go('dashboard');
+    toast(mode==='all'?'Application remise à zéro':'Devis et factures effacés');
+  };
+}
 
 /* ---------- Init ---------- */
 buildNav();
 go('dashboard');
+
 </script>
 </body>
 </html>
