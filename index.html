@@ -554,11 +554,16 @@ function buildNav(){
   document.querySelectorAll('#nav a').forEach(a=>{
     const v=a.dataset.view, d=NAV.find(n=>n.v===v);
     a.innerHTML=d.i+'<span class="navtext">'+d.t+'</span>';
-    a.classList.toggle('active',v===VIEW);
-    a.onclick=e=>{e.preventDefault();go(v);};
+    a.classList.toggle('active',v===VIEW && v!=='logout');
+    a.onclick=e=>{
+      e.preventDefault();
+      if(v==='logout'){ logoutApp(); return; }
+      go(v);
+    };
   });
 }
 function go(view,param){
+  if(view==='logout'){ logoutApp(); return; }
   VIEW=view; buildNav();
   const d=NAV.find(n=>n.v===view);
   document.getElementById('eyebrow').textContent = ({dashboard:'Pilotage',quotes:'Documents',invoices:'Documents',clients:'Référentiel',catalog:'Référentiel',company:'Référentiel'})[view]||'';
