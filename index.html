@@ -267,10 +267,36 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
   .sheet{padding:26px 22px}
 }
 
+/* ---------- Code d'entree ---------- */
+.app.locked{display:none}
+.access-gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#0A1A33 0%,#16305A 48%,#FF5A1F 100%)}
+.access-card{width:min(100%,390px);background:#fff;border:1px solid rgba(255,255,255,.22);border-radius:16px;box-shadow:0 24px 70px rgba(10,26,51,.35);padding:28px;color:var(--ink)}
+.access-brand{font-family:var(--display);font-weight:700;font-size:22px;color:var(--navy);letter-spacing:.02em;line-height:1}
+.access-brand span{color:var(--orange)}
+.access-card h2{font-family:var(--display);margin:22px 0 8px;font-size:20px;color:var(--navy);letter-spacing:0}
+.access-card p{margin:0 0 18px;color:var(--muted);font-size:13px}
+.access-card .field{margin-bottom:10px}
+.access-card input{text-align:center;font-family:var(--display);font-size:19px;letter-spacing:.16em}
+.access-card .btn{width:100%;justify-content:center;margin-top:8px}
+.access-error{min-height:18px;margin-top:10px;color:var(--danger);font-size:12.5px;text-align:center;font-weight:600}
+@media(max-width:520px){.access-card{padding:24px 20px;border-radius:14px}.access-gate{align-items:flex-start;padding-top:14vh}}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="access-gate" id="accessGate">
+  <form class="access-card" id="accessForm" autocomplete="off">
+    <div class="access-brand">TBSN <span>groupe.</span></div>
+    <h2>Code d'entree</h2>
+    <p>Entrez le code pour acceder a l'application devis et factures.</p>
+    <div class="field">
+      <label for="accessCode">Code</label>
+      <input type="password" id="accessCode" inputmode="numeric" placeholder="----" autofocus>
+    </div>
+    <button class="btn primary" type="submit">Acceder au site</button>
+    <div class="access-error" id="accessError" aria-live="polite"></div>
+  </form>
+</div>
+<div class="app locked" id="appRoot">
   <aside class="rail">
     <div class="brand">
       <div class="wm">TBSN <span>groupe.</span></div>
@@ -1140,9 +1166,35 @@ function openResetModal(){
   };
 }
 
+
+/* ---------- Code d'entree ---------- */
+const ENTRY_CODE = '1234'; // Changez ce code ici.
+const ACCESS_KEY = 'tbsn_access_ok';
+function unlockApp(){
+  sessionStorage.setItem(ACCESS_KEY,'1');
+  document.getElementById('appRoot').classList.remove('locked');
+  document.getElementById('accessGate').style.display='none';
+  buildNav();
+  go('dashboard');
+}
+function initAccessGate(){
+  const form=document.getElementById('accessForm');
+  const input=document.getElementById('accessCode');
+  const error=document.getElementById('accessError');
+  if(sessionStorage.getItem(ACCESS_KEY)==='1'){
+    unlockApp();
+    return;
+  }
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    if(input.value.trim()===ENTRY_CODE){ unlockApp(); return; }
+    error.textContent='Code incorrect.';
+    input.value='';
+    input.focus();
+  });
+}
 /* ---------- Init ---------- */
-buildNav();
-go('dashboard');
+initAccessGate();
 
 </script>
 </body>
