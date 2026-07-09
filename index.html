@@ -298,6 +298,32 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
   .opt-item .op{white-space:normal;text-align:right;flex:none}
   .lineTable input{min-width:0}
   .catbase .num{width:90px}
+
+  /* En-tête de page : titre puis boutons, sur deux lignes */
+  .topbar{flex-direction:column;align-items:stretch;gap:12px}
+  #pageActions{width:100%}
+  #pageActions .btn{flex:1;justify-content:center}
+
+  /* Tableaux → fiches empilées (plus aucun défilement latéral) */
+  .card table:not(.lineTable),
+  .card table:not(.lineTable) tbody,
+  .card table:not(.lineTable) tr,
+  .card table:not(.lineTable) td{display:block;width:100%}
+  .card table:not(.lineTable) thead{display:none}
+  .card table:not(.lineTable) tbody tr{border-bottom:1px solid var(--line);padding:14px 16px}
+  .card table:not(.lineTable) tbody tr:last-child{border-bottom:none}
+  .card table:not(.lineTable) tbody tr:hover{background:transparent}
+  .card table:not(.lineTable) tbody td{border:none;padding:5px 0;display:flex;
+    justify-content:space-between;align-items:center;gap:14px;text-align:right}
+  .card table:not(.lineTable) tbody td::before{content:attr(data-l);font-family:var(--display);
+    font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    font-weight:600;flex:none;text-align:left}
+  .card table:not(.lineTable) tbody td:not([data-l])::before{content:none}
+  .card table:not(.lineTable) tbody td>*{min-width:0;overflow-wrap:anywhere}
+  .card td.td-act{padding-top:10px;margin-top:6px;border-top:1px dashed var(--line-2)}
+  .card .rowActions{opacity:1;justify-content:space-around;width:100%}
+  .card .rowActions .iconbtn{padding:9px}
+  .card .rowActions svg{width:19px;height:19px}
 }
 
 /* ---------- Code d'entree ---------- */
@@ -684,12 +710,12 @@ function docTable(list,type){
     const st=type==='invoice'?invoiceStatus(d):quoteStatus(d);
     const tot=docTotals(d).total;
     h+='<tr data-id="'+d.id+'" data-type="'+type+'">'+
-      '<td><span class="doc-no">'+esc(d.number||'—')+'</span></td>'+
-      '<td><div class="cell-strong">'+esc(cl?cl.name:'—')+'</div></td>'+
-      '<td>'+fmtDate(d.date)+'</td>'+
-      '<td><span class="badge '+st.cls+'">'+st.k+'</span></td>'+
-      '<td class="t-right tnum cell-strong">'+fmt(tot)+'</td>'+
-      '<td><div class="rowActions">'+
+      '<td data-l="N°"><span class="doc-no">'+esc(d.number||'—')+'</span></td>'+
+      '<td data-l="Client"><div class="cell-strong">'+esc(cl?cl.name:'—')+'</div></td>'+
+      '<td data-l="Date">'+fmtDate(d.date)+'</td>'+
+      '<td data-l="Statut"><span class="badge '+st.cls+'">'+st.k+'</span></td>'+
+      '<td data-l="Montant" class="t-right tnum cell-strong">'+fmt(tot)+'</td>'+
+      '<td class="td-act"><div class="rowActions">'+
         '<button class="iconbtn act-edit" title="Ouvrir">'+I.edit+'</button>'+
         '<button class="iconbtn act-print" title="Imprimer / PDF">'+I.print+'</button>'+
         (type==='quote'?'<button class="iconbtn act-toinv" title="Transformer en facture">'+I.toInv+'</button>':'')+
@@ -1085,10 +1111,10 @@ function renderClients(c){
   let h='<div class="card"><table><thead><tr><th>Client</th><th>Contact</th><th>Ville</th><th class="t-right">Documents</th><th></th></tr></thead><tbody>';
   S.clients.forEach(cl=>{
     const docs=S.quotes.filter(q=>q.clientId===cl.id).length+S.invoices.filter(i=>i.clientId===cl.id).length;
-    h+='<tr data-id="'+cl.id+'"><td><div class="cell-strong">'+esc(cl.name)+'</div>'+(cl.email?'<div class="cell-sub">'+esc(cl.email)+'</div>':'')+'</td>'+
-       '<td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.city||'—')+'</td>'+
-       '<td class="t-right tnum">'+docs+'</td>'+
-       '<td><div class="rowActions"><button class="iconbtn c-edit">'+I.edit+'</button><button class="iconbtn danger c-del">'+I.trash+'</button></div></td></tr>';
+    h+='<tr data-id="'+cl.id+'"><td data-l="Client"><div class="cell-strong">'+esc(cl.name)+'</div>'+(cl.email?'<div class="cell-sub">'+esc(cl.email)+'</div>':'')+'</td>'+
+       '<td data-l="Contact">'+esc(cl.contact||'—')+'</td><td data-l="Ville">'+esc(cl.city||'—')+'</td>'+
+       '<td data-l="Documents" class="t-right tnum">'+docs+'</td>'+
+       '<td class="td-act"><div class="rowActions"><button class="iconbtn c-edit">'+I.edit+'</button><button class="iconbtn danger c-del">'+I.trash+'</button></div></td></tr>';
   });
   h+='</tbody></table></div>'; c.innerHTML=h;
   c.querySelectorAll('tr[data-id]').forEach(tr=>{
