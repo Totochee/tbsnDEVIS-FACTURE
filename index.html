@@ -1199,13 +1199,10 @@ function resetAccessForm(){
 function logoutApp(){
   sessionStorage.removeItem(ACCESS_KEY);
   closeModal();
+  VIEW='dashboard';
   document.getElementById('appRoot').classList.add('locked');
   document.getElementById('accessGate').style.display='flex';
   resetAccessForm();
-  window.close();
-  setTimeout(()=>{
-    try{ window.location.replace('about:blank'); }catch(e){}
-  },150);
 }
 function initAccessGate(){
   const form=document.getElementById('accessForm');
