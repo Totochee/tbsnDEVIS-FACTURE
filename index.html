@@ -1366,6 +1366,10 @@ async function boot(){
     // Reste connecté d'une session à l'autre
     await authMod.setPersistence(auth, authMod.browserLocalPersistence);
 
+    // Retour d'une connexion Google par redirection (cas des mobiles)
+    try{ await authMod.getRedirectResult(auth); }
+    catch(e){ console.error('Retour de redirection :', e); }
+
     authMod.onAuthStateChanged(auth, async (user)=>{
       fb.user = user;
       if(unsubscribe){ unsubscribe(); unsubscribe=null; }
@@ -1506,10 +1510,22 @@ function openSyncModal(){
     return;
   }
 
+  // Firebase n'a pas pu se charger (hors ligne, blocage réseau…)
+  if(!fb){ return A.openModal(
+    '<div class="modal-head"><h3>Service indisponible</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>'+
+    '<div class="modal-body"><p style="margin:0 0 10px">Impossible de joindre le service de synchronisation.</p>'+
+    '<p style="color:var(--muted);margin:0">Vérifiez votre connexion internet, puis rechargez la page. Vos données restent en sécurité sur cet appareil.</p></div>'+
+    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Fermer</button></div>'
+  ); }
+
+  const GLOGO='<svg viewBox="0 0 48 48" width="18" height="18" style="flex:none"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
   A.openModal(
     '<div class="modal-head"><h3>Se connecter</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>'+
     '<div class="modal-body">'+
       '<p style="color:var(--muted);margin:0 0 14px">Utilisez le même compte sur votre ordinateur et votre téléphone pour retrouver vos documents partout.</p>'+
+      '<button class="btn" id="sGoogle" style="width:100%;justify-content:center;gap:10px;padding:12px">'+GLOGO+'Continuer avec Google</button>'+
+      '<div style="display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:11.5px">'+
+        '<span style="flex:1;height:1px;background:var(--line)"></span>ou<span style="flex:1;height:1px;background:var(--line)"></span></div>'+
       '<div class="field"><label>Adresse email</label><input type="email" id="sMail" autocomplete="username"></div>'+
       '<div class="field"><label>Mot de passe</label><input type="password" id="sPass" autocomplete="current-password"></div>'+
       '<div id="sErr" style="display:none;background:var(--danger-soft);color:var(--danger);border-radius:9px;padding:10px 12px;font-size:12.5px"></div>'+
@@ -1525,8 +1541,31 @@ function openSyncModal(){
     if(c.includes('email-already-in-use')) return 'Ce compte existe déjà — utilisez « Se connecter ».';
     if(c.includes('weak-password')) return 'Mot de passe trop court (6 caractères minimum).';
     if(c.includes('invalid-email')) return 'Adresse email invalide.';
+    if(c.includes('unauthorized-domain')) return 'Domaine non autorisé : ajoutez-le dans Firebase > Authentication > Settings.';
+    if(c.includes('operation-not-allowed')) return 'Méthode désactivée : activez « Google » dans Firebase > Authentication.';
+    if(c.includes('account-exists-with-different-credential')) return 'Ce compte existe déjà avec l’autre méthode de connexion.';
+    if(c.includes('popup-closed-by-user')||c.includes('cancelled-popup-request')) return 'Connexion annulée.';
     if(c.includes('network')) return 'Pas de connexion internet.';
     return 'Erreur : '+c;
+  };
+  /* Connexion Google — bascule vers une redirection si la fenêtre est bloquée
+     (cas fréquent sur téléphone). */
+  document.getElementById('sGoogle').onclick=async()=>{
+    const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = fb.authMod;
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt:'select_account' });
+    try{
+      await signInWithPopup(fb.auth, provider);
+      A.closeModal(); A.toast('Connecté avec Google');
+    }catch(e){
+      const c=String(e.code||e);
+      if(c.includes('popup-blocked')||c.includes('operation-not-supported')||c.includes('cancelled-popup-request')){
+        try{ await signInWithRedirect(fb.auth, provider); return; }
+        catch(e2){ err(human(e2)); return; }
+      }
+      if(c.includes('popup-closed-by-user')) return;   // l'utilisateur a fermé, pas une erreur
+      err(human(e));
+    }
   };
   document.getElementById('sIn').onclick=async()=>{
     try{ await fb.authMod.signInWithEmailAndPassword(fb.auth, mail(), pass()); A.closeModal(); A.toast('Connecté'); }
