@@ -6,11 +6,14 @@
 <title>TBSN — Devis & Factures</title>
 
 <!-- ============ ICONE / FAVICON ============
-   Votre PNG. Le "?v=2" force le navigateur a recharger l icone
-   (les favicons sont mis en cache tres agressivement).
-   Incrementez ce numero (v=3, v=4...) a chaque changement d icone. -->
-<link rel="icon" type="image/png" href="favicondevis.png?v=2">
-<link rel="apple-touch-icon" href="favicondevis.png?v=2">
+   Chemin ABSOLU (commence par /) : il fonctionne que l adresse
+   se termine par / ou non. Un chemin relatif comme "favicondevis.png"
+   casse sur https://totochee.github.io/tbsnDEVIS-FACTURE (sans slash).
+   Le "?v=3" force le rechargement (les favicons sont tres caches).
+   Incrementez ce numero (v=4, v=5...) a chaque changement d icone.
+   ATTENTION : si vous renommez le depot, changez aussi ce chemin. -->
+<link rel="icon" type="image/png" href="/tbsnDEVIS-FACTURE/favicondevis.png?v=3">
+<link rel="apple-touch-icon" href="/tbsnDEVIS-FACTURE/favicondevis.png?v=3">
 
 <!-- SECOURS : si le PNG ne s affiche toujours pas, mettez la ligne
    ci-dessus en commentaire et decommentez celle-ci. Cette icone est
