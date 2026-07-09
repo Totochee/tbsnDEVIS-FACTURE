@@ -36,19 +36,19 @@ a{color:var(--orange)}
 
 /* ---------- Layout ---------- */
 .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-.rail{background:var(--navy);color:#9FB0C9;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.rail{background:var(--navy);color:#9FB0C9;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
 .brand{padding:24px 22px 18px}
 .brand .wm{font-family:var(--display);font-weight:700;font-size:1.28rem;letter-spacing:.02em;color:#fff;line-height:1}
 .brand .wm span{color:var(--orange)}
 .brand .bs{font-size:10px;color:#5E7091;letter-spacing:.2em;text-transform:uppercase;margin-top:8px;font-weight:600}
-.nav{padding:8px 12px;display:flex;flex-direction:column;gap:2px;flex:1}
+.nav{padding:8px 12px;display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin}
 .nav .lbl{font-family:var(--display);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#5E7091;padding:16px 10px 6px;font-weight:600}
 .nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:#A9B7CC;text-decoration:none;font-weight:500;font-size:13.5px;transition:.14s}
 .nav a svg{width:17px;height:17px;flex:none;opacity:.9}
 .nav a:hover{background:rgba(255,255,255,.06);color:#fff}
 .nav a.active{background:var(--orange);color:#fff;box-shadow:0 6px 18px rgba(255,90,31,.32)}
 .nav a.active svg{opacity:1}
-.rail-foot{padding:14px 14px 18px;border-top:1px solid rgba(255,255,255,.09);display:flex;flex-direction:column;gap:8px}
+.rail-foot{flex:none;padding:14px 14px 18px;border-top:1px solid rgba(255,255,255,.09);display:flex;flex-direction:column;gap:8px}
 .rail-foot .rf-btn{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.06);color:#C2CDDE;border:none;border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:500;width:100%;text-align:left;transition:.14s}
 .rail-foot .rf-btn:hover{background:rgba(255,255,255,.12);color:#fff}
 .rail-foot .rf-btn svg{width:15px;height:15px}
@@ -253,7 +253,12 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
 }
 
 /* ---------- Responsive ---------- */
-@media(max-width:1080px){ .editor{grid-template-columns:1fr} .sheetwrap{position:static} .stats{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:1080px){
+  .editor{grid-template-columns:minmax(0,1fr)}
+  .editor>*{min-width:0}
+  .sheetwrap{position:static;overflow-x:auto}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
 @media(max-width:760px){
   .app{grid-template-columns:1fr}
   .rail{position:fixed;bottom:0;top:auto;left:0;right:0;height:62px;flex-direction:row;z-index:50}
@@ -262,7 +267,7 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
   .nav a{padding:8px 2px}
   .nav a svg{width:19px;height:19px}
   .nav a span.navtext{font-size:8.6px}
-  .nav{flex-direction:row;padding:0;justify-content:space-around;width:100%}
+  .nav{flex-direction:row;padding:0;justify-content:space-around;width:100%;overflow:visible;min-height:0}
   .nav a{flex-direction:column;gap:3px;font-size:9.5px;padding:8px 4px;border-radius:0;min-width:0;flex:1}
   .nav a span.navtext{font-size:9px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .nav a[data-view="logout"] span.navtext{font-size:8.4px}
@@ -270,7 +275,29 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
   .topbar,.content{padding-left:16px;padding-right:16px}
   .form-grid{grid-template-columns:1fr}
   .stats{grid-template-columns:1fr}
-  .sheet{padding:26px 22px}
+  .sheet{padding:20px 14px;font-size:11.5px}
+  .sheet .doc-top{flex-direction:column;gap:12px}
+  .sheet .doc-title{text-align:left}
+  .sheet .meta{flex-direction:column;gap:14px}
+  .sheet .datebox{text-align:left}
+  .sheet .sums .sbox{width:100%;max-width:none}
+  .sheet table.doc-items th{font-size:8.5px;padding:8px 6px}
+  .sheet table.doc-items td{padding:9px 6px}
+
+  /* Blocs de prestation : plus de débordement latéral */
+  .bloc-head{flex-wrap:wrap;row-gap:6px}
+  .bloc-head .bn{flex:1 1 100%;order:1;min-width:0;overflow-wrap:anywhere}
+  .bloc-head .dot{order:0}
+  .bloc-head .bprice{order:2;margin-left:auto}
+  .bloc-head .b-rm{order:3}
+  .ctrl-row{flex-direction:column;align-items:stretch;gap:6px}
+  .ctrl-row select,.ctrl-row input{width:100%;max-width:none;min-width:0}
+  .ctrl-row .num{width:100%;text-align:left}
+  .opt-item{align-items:flex-start;gap:8px}
+  .opt-item .oc{flex:1;min-width:0;overflow-wrap:anywhere}
+  .opt-item .op{white-space:normal;text-align:right;flex:none}
+  .lineTable input{min-width:0}
+  .catbase .num{width:90px}
 }
 
 /* ---------- Code d'entree ---------- */
@@ -287,6 +314,8 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
 .access-error{min-height:18px;margin-top:10px;color:var(--danger);font-size:12.5px;text-align:center;font-weight:600}
 @media(max-width:520px){.access-card{padding:24px 20px;border-radius:14px}.access-gate{align-items:flex-start;padding-top:14vh}}
 </style>
+<!-- Génération de PDF sur mobile (chargement différé, facultatif) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 </head>
 <body>
 <div class="access-gate" id="accessGate">
@@ -1000,11 +1029,50 @@ function docHTML(doc,type){
   h+='</div>';
   return h;
 }
+/* Sur mobile, window.print() est peu fiable (surtout iOS) : on génère un vrai
+   PDF A4 téléchargeable. Sur ordinateur, l'impression native reste meilleure.
+   Si la bibliothèque n'est pas chargée, on retombe sur l'impression. */
+const isMobileUI = ()=>window.matchMedia('(max-width:760px)').matches;
+
+function nativePrint(doc,type){
+  const pr=document.getElementById('print-root');
+  pr.removeAttribute('style');
+  pr.innerHTML=docHTML(doc,type);
+  setTimeout(()=>window.print(),60);
+}
+
+async function savePDF(doc,type){
+  const pr=document.getElementById('print-root');
+  pr.innerHTML=docHTML(doc,type);
+  // Rendu hors écran mais mesurable (794px = largeur A4 à 96 dpi)
+  pr.style.cssText='position:fixed;left:0;top:0;width:794px;background:#fff;z-index:-1;opacity:0;pointer-events:none';
+  const sheet=pr.querySelector('.sheet');
+  sheet.style.border='none'; sheet.style.boxShadow='none'; sheet.style.borderRadius='0';
+  const nom=(doc.number||(type==='quote'?'devis':'facture'))+'.pdf';
+  try{
+    await html2pdf().set({
+      margin:[12,10,12,10],
+      filename:nom,
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}
+    }).from(sheet).save();
+    toast('PDF enregistré · '+nom);
+  } finally {
+    pr.removeAttribute('style'); pr.innerHTML='';
+  }
+}
+
 function printDoc(type,id){
   const store=type==='quote'?S.quotes:S.invoices;
   const doc=store.find(d=>d.id===id)||(draft&&draft.id===id?draft:null); if(!doc)return;
-  document.getElementById('print-root').innerHTML=docHTML(doc,type);
-  setTimeout(()=>window.print(),60);
+  if(isMobileUI() && typeof html2pdf==='function'){
+    toast('Création du PDF…');
+    savePDF(doc,type).catch(err=>{ console.error(err); nativePrint(doc,type); });
+    return;
+  }
+  nativePrint(doc,type);
 }
 
 /* ========================================================= */
