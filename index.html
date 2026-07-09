@@ -258,8 +258,9 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
   .rail{position:fixed;bottom:0;top:auto;left:0;right:0;height:62px;flex-direction:row;z-index:50}
   .brand,.rail-foot,.nav .lbl{display:none}
   .nav{flex-direction:row;padding:0;justify-content:space-around;width:100%}
-  .nav a{flex-direction:column;gap:3px;font-size:9.5px;padding:8px 4px;border-radius:0}
-  .nav a span.navtext{font-size:9.5px}
+  .nav a{flex-direction:column;gap:3px;font-size:9.5px;padding:8px 4px;border-radius:0;min-width:0;flex:1}
+  .nav a span.navtext{font-size:9px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nav a[data-view="logout"] span.navtext{font-size:8.4px}
   .main{padding-bottom:74px}
   .topbar,.content{padding-left:16px;padding-right:16px}
   .form-grid{grid-template-columns:1fr}
@@ -312,6 +313,8 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
       <a data-view="clients"></a>
       <a data-view="catalog"></a>
       <a data-view="company"></a>
+      <div class="lbl">Session</div>
+      <a data-view="logout"></a>
     </nav>
     <div class="rail-foot">
       <button class="rf-btn" id="btnExport"></button>
@@ -363,6 +366,7 @@ const I = {
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+  logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
   save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>',
 };
 const NAV = [
@@ -372,6 +376,7 @@ const NAV = [
   {v:'clients',t:'Clients',i:I.clients},
   {v:'catalog',t:'Prestations',i:I.catalog},
   {v:'company',t:'Mon entreprise',i:I.company},
+  {v:'logout',t:'Deconnexion',i:I.logout},
 ];
 
 /* ---------- Stockage (localStorage + repli mémoire) ---------- */
@@ -1176,6 +1181,26 @@ function unlockApp(){
   document.getElementById('accessGate').style.display='none';
   buildNav();
   go('dashboard');
+}
+function resetAccessForm(){
+  const input=document.getElementById('accessCode');
+  const error=document.getElementById('accessError');
+  if(error) error.textContent='';
+  if(input){
+    input.value='';
+    setTimeout(()=>input.focus(),30);
+  }
+}
+function logoutApp(){
+  sessionStorage.removeItem(ACCESS_KEY);
+  closeModal();
+  document.getElementById('appRoot').classList.add('locked');
+  document.getElementById('accessGate').style.display='flex';
+  resetAccessForm();
+  window.close();
+  setTimeout(()=>{
+    try{ window.location.replace('about:blank'); }catch(e){}
+  },150);
 }
 function initAccessGate(){
   const form=document.getElementById('accessForm');
