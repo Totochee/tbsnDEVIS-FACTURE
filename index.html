@@ -319,6 +319,7 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
     <div class="rail-foot">
       <button class="rf-btn" id="btnExport"></button>
       <button class="rf-btn" id="btnImport"></button>
+      <button class="rf-btn" id="btnSync"></button>
       <button class="rf-btn" id="btnReset"></button>
     </div>
   </aside>
@@ -469,7 +470,24 @@ let S = DB.load() || defaultState();
 if(!S.settings) S.settings={quoteValidityDays:30,invoiceDueDays:30,pricePerKm:0.50,autoRemise:true};
 if(S.settings.pricePerKm==null) S.settings.pricePerKm=0.50;
 if(!S.services) S.services=JSON.parse(JSON.stringify(DEFAULT_SERVICES));
-function save(){ DB.save(S); }
+function save(){
+  S._updatedAt = Date.now();
+  DB.save(S);
+  // Prévient la synchronisation cloud (si active) qu'il y a du nouveau
+  if(window.TBSNSync && window.TBSNSync.onLocalChange) window.TBSNSync.onLocalChange();
+}
+
+/* Pont utilisé par le module de synchronisation (voir bas de page) */
+window.__tbsn = {
+  getState: ()=>S,
+  setState: (obj)=>{ S=obj; DB.save(S); },
+  saveLocal: ()=>DB.save(S),
+  refresh: ()=>{ try{ go(VIEW==='editor'?'dashboard':VIEW); }catch(e){ go('dashboard'); } },
+  toast: (m)=>toast(m),
+  openModal: (h)=>openModal(h),
+  closeModal: ()=>closeModal(),
+  icons: ()=>I
+};
 
 /* ---------- Utilitaires ---------- */
 const uid = (p='id')=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -1111,7 +1129,26 @@ function renderCompany(c){
   c.innerHTML=h;
   const lf=document.getElementById('logoFile');
   document.getElementById('logoBtn').onclick=()=>lf.click();
-  lf.onchange=()=>{ const f=lf.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ S.company.logo=r.result; save(); go('company'); }; r.readAsDataURL(f); };
+  lf.onchange=()=>{
+    const f=lf.files[0]; if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      // Redimensionne le logo (max 400px de large) pour rester léger :
+      // Firestore limite un document à 1 Mo, logo compris.
+      const img=new Image();
+      img.onload=()=>{
+        const maxW=400, scale=Math.min(1, maxW/img.width);
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(img.width*scale); cv.height=Math.round(img.height*scale);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        try{ S.company.logo=cv.toDataURL('image/png'); }catch(e){ S.company.logo=r.result; }
+        save(); go('company');
+      };
+      img.onerror=()=>{ S.company.logo=r.result; save(); go('company'); };
+      img.src=r.result;
+    };
+    r.readAsDataURL(f);
+  };
   if(document.getElementById('logoDel')) document.getElementById('logoDel').onclick=()=>{ S.company.logo=''; save(); go('company'); };
   document.getElementById('saveCo').onclick=()=>{
     const g=x=>{const e=document.getElementById(x); return e?e.value.trim():'';};
@@ -1224,5 +1261,245 @@ function initAccessGate(){
 initAccessGate();
 
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SYNCHRONISATION CLOUD (Firebase) — optionnelle
+     Sans configuration, l'application fonctionne exactement comme
+     avant : 100 % locale. Voir la marche à suivre dans le README.
+     ═══════════════════════════════════════════════════════════════ -->
+<script type="module">
+/* ─────────────────────────────────────────────────────────────
+   1) COLLEZ ICI LA CONFIGURATION DE VOTRE PROJET FIREBASE
+   Console Firebase > Paramètres du projet > Vos applications > Web
+   Ces valeurs ne sont PAS des secrets : elles peuvent être publiques.
+   La sécurité est assurée par la connexion + les règles Firestore.
+   ───────────────────────────────────────────────────────────── */
+const firebaseConfig = {
+  apiKey:            "",
+  authDomain:        "",
+  projectId:         "",
+  storageBucket:     "",
+  messagingSenderId: "",
+  appId:             ""
+};
+/* ───────────────────────────────────────────────────────────── */
+
+const A = window.__tbsn;
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CONFIGURED = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+
+let fb=null;              // { auth, db, user }
+let unsubscribe=null;     // écoute temps réel
+let applyingRemote=false; // évite de renvoyer ce qu'on vient de recevoir
+let pushTimer=null;
+let lastSync=null;
+let status='local';       // local | connecting | online | error
+
+/* ---------- Bouton de la barre latérale ---------- */
+const btn=document.getElementById('btnSync');
+const ICON_CLOUD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>';
+function paintBtn(){
+  const dot = status==='online' ? '<span style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#4ADE80;flex:none"></span>'
+            : status==='error'  ? '<span style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#F87171;flex:none"></span>'
+            : '';
+  const label = status==='online' ? 'Synchronisé' : status==='connecting' ? 'Connexion…' : 'Synchroniser';
+  btn.innerHTML = ICON_CLOUD + '<span>' + label + '</span>' + dot;
+  btn.style.display='flex'; btn.style.alignItems='center';
+}
+paintBtn();
+btn.onclick=openSyncModal;
+
+/* ---------- Démarrage ---------- */
+if(CONFIGURED) boot();
+
+async function boot(){
+  try{
+    status='connecting'; paintBtn();
+    const [{ initializeApp }, authMod, fsMod] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js')
+    ]);
+    const app  = initializeApp(firebaseConfig);
+    const auth = authMod.getAuth(app);
+    const db   = fsMod.getFirestore(app);
+    fb = { auth, db, authMod, fsMod, user:null };
+
+    // Reste connecté d'une session à l'autre
+    await authMod.setPersistence(auth, authMod.browserLocalPersistence);
+
+    authMod.onAuthStateChanged(auth, async (user)=>{
+      fb.user = user;
+      if(unsubscribe){ unsubscribe(); unsubscribe=null; }
+      if(user){ await afterSignIn(); }
+      else { status='local'; paintBtn(); }
+    });
+  }catch(e){
+    console.error('Firebase indisponible :', e);
+    status='error'; paintBtn();
+  }
+}
+
+function docRef(){
+  const { doc } = fb.fsMod;
+  return doc(fb.db, 'users', fb.user.uid, 'app', 'state');
+}
+
+/* ---------- Après connexion : fusion initiale ---------- */
+async function afterSignIn(){
+  const { getDoc } = fb.fsMod;
+  status='connecting'; paintBtn();
+  let snap;
+  try{ snap = await getDoc(docRef()); }
+  catch(e){ console.error(e); status='error'; paintBtn(); A.toast('Erreur de lecture cloud.'); return; }
+
+  const local = A.getState();
+  const localHasData = (local.quotes?.length || local.invoices?.length || local.clients?.length);
+
+  if(!snap.exists()){
+    await pushNow();                 // premier envoi : le cloud est vide
+    listen();
+    return;
+  }
+  const remote = snap.data().state;
+  const rT = remote?._updatedAt || 0, lT = local?._updatedAt || 0;
+
+  if(!localHasData || rT >= lT){ applyRemote(remote); listen(); return; }
+
+  // Divergence : l'appareil a des données plus récentes que le cloud
+  askConflict(remote, local);
+}
+
+function askConflict(remote, local){
+  const cnt = s => (s.quotes?.length||0)+' devis · '+(s.invoices?.length||0)+' factures · '+(s.clients?.length||0)+' clients';
+  const d = t => t? new Date(t).toLocaleString('fr-FR') : 'inconnue';
+  A.openModal(
+    '<div class="modal-head"><h3>Quelles données garder ?</h3></div>'+
+    '<div class="modal-body">'+
+      '<p style="margin:0 0 14px;color:var(--muted)">Cet appareil et le cloud contiennent des données différentes. Choisissez la version à conserver — l’autre sera remplacée.</p>'+
+      '<label class="opt-item on" style="cursor:pointer"><span class="oc"><input type="radio" name="cf" value="local" checked style="width:17px;height:17px;accent-color:var(--orange)"> <span><b>Cet appareil</b><br><small style="color:var(--muted)">'+esc(cnt(local))+'<br>modifié le '+esc(d(local._updatedAt))+'</small></span></span></label>'+
+      '<label class="opt-item" style="cursor:pointer"><span class="oc"><input type="radio" name="cf" value="remote" style="width:17px;height:17px;accent-color:var(--orange)"> <span><b>Le cloud</b><br><small style="color:var(--muted)">'+esc(cnt(remote||{}))+'<br>modifié le '+esc(d(remote?._updatedAt))+'</small></span></span></label>'+
+      '<div style="background:var(--warn-soft);color:var(--warn);border-radius:9px;padding:11px 13px;font-size:12.5px;margin-top:10px"><b>Conseil :</b> faites une sauvegarde (bouton « Sauvegarder ») avant de choisir.</div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn primary" id="cfOk">Confirmer</button></div>'
+  );
+  document.getElementById('cfOk').onclick=async()=>{
+    const v=document.querySelector('input[name=cf]:checked').value;
+    A.closeModal();
+    if(v==='local') await pushNow(); else applyRemote(remote);
+    listen();
+  };
+  document.querySelectorAll('input[name=cf]').forEach(r=>r.onchange=()=>{
+    document.querySelectorAll('.opt-item').forEach(l=>l.classList.toggle('on', l.querySelector('input').checked));
+  });
+}
+
+/* ---------- Écoute temps réel ---------- */
+function listen(){
+  const { onSnapshot } = fb.fsMod;
+  if(unsubscribe) unsubscribe();
+  unsubscribe = onSnapshot(docRef(), (snap)=>{
+    if(!snap.exists() || snap.metadata.hasPendingWrites) return; // ignore nos propres écritures
+    const remote = snap.data().state;
+    const local = A.getState();
+    if((remote?._updatedAt||0) > (local?._updatedAt||0)){
+      applyRemote(remote);
+      A.toast('Mise à jour reçue');
+    }
+  }, (e)=>{ console.error(e); status='error'; paintBtn(); });
+  status='online'; lastSync=Date.now(); paintBtn();
+}
+
+function applyRemote(remote){
+  if(!remote) return;
+  applyingRemote=true;
+  A.setState(remote);
+  A.refresh();
+  applyingRemote=false;
+  status='online'; lastSync=Date.now(); paintBtn();
+}
+
+/* ---------- Envoi (anti-rebond : 1,2 s après la dernière frappe) ---------- */
+function onLocalChange(){
+  if(!fb || !fb.user || applyingRemote) return;
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(pushNow, 1200);
+}
+async function pushNow(){
+  if(!fb || !fb.user) return;
+  const { setDoc } = fb.fsMod;
+  try{
+    await setDoc(docRef(), { state: A.getState(), _savedAt: Date.now() });
+    status='online'; lastSync=Date.now(); paintBtn();
+  }catch(e){
+    console.error(e); status='error'; paintBtn();
+    A.toast(String(e).includes('longer than') ? 'Données trop volumineuses (logo ?)' : 'Échec de l’envoi au cloud');
+  }
+}
+window.TBSNSync={ onLocalChange, pushNow };
+
+/* ---------- Fenêtre de synchronisation ---------- */
+function openSyncModal(){
+  if(!CONFIGURED){ return A.openModal(
+    '<div class="modal-head"><h3>Synchronisation non configurée</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<p style="margin:0 0 10px">Vos données restent pour l’instant <b>sur cet appareil uniquement</b>.</p>'+
+      '<p style="color:var(--muted);margin:0 0 14px">Pour retrouver vos devis et factures sur votre téléphone, créez un projet Firebase gratuit, puis collez sa configuration en haut du bloc <code>&lt;script type="module"&gt;</code>, tout en bas du fichier <code>index.html</code>.</p>'+
+      '<div style="background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:12px 14px;font-size:12.5px;line-height:1.7">'+
+        '<b>En attendant :</b> utilisez « Sauvegarder » sur cet appareil, envoyez-vous le fichier, puis « Restaurer » sur l’autre appareil.'+
+      '</div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" onclick="closeModal()">Fermer</button></div>'
+  ); }
+
+  if(fb && fb.user){
+    const d = lastSync? new Date(lastSync).toLocaleTimeString('fr-FR') : '—';
+    A.openModal(
+      '<div class="modal-head"><h3>Synchronisation active</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>'+
+      '<div class="modal-body">'+
+        '<p style="margin:0 0 6px">Connecté en tant que <b>'+esc(fb.user.email)+'</b></p>'+
+        '<p style="color:var(--muted);margin:0 0 14px">Dernière synchronisation : '+esc(d)+'</p>'+
+        '<div style="background:var(--ok-soft);color:var(--ok);border-radius:9px;padding:11px 13px;font-size:12.5px">Vos devis et factures se mettent à jour automatiquement sur tous vos appareils connectés avec ce compte.</div>'+
+      '</div>'+
+      '<div class="modal-foot"><button class="btn danger" id="sOut">Se déconnecter</button><button class="btn primary" id="sNow">Envoyer maintenant</button></div>'
+    );
+    document.getElementById('sNow').onclick=async()=>{ await pushNow(); A.closeModal(); A.toast('Données envoyées'); };
+    document.getElementById('sOut').onclick=async()=>{ await fb.authMod.signOut(fb.auth); A.closeModal(); A.toast('Déconnecté — données conservées sur cet appareil'); };
+    return;
+  }
+
+  A.openModal(
+    '<div class="modal-head"><h3>Se connecter</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<p style="color:var(--muted);margin:0 0 14px">Utilisez le même compte sur votre ordinateur et votre téléphone pour retrouver vos documents partout.</p>'+
+      '<div class="field"><label>Adresse email</label><input type="email" id="sMail" autocomplete="username"></div>'+
+      '<div class="field"><label>Mot de passe</label><input type="password" id="sPass" autocomplete="current-password"></div>'+
+      '<div id="sErr" style="display:none;background:var(--danger-soft);color:var(--danger);border-radius:9px;padding:10px 12px;font-size:12.5px"></div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" id="sUp">Créer un compte</button><button class="btn primary" id="sIn">Se connecter</button></div>'
+  );
+  const mail=()=>document.getElementById('sMail').value.trim();
+  const pass=()=>document.getElementById('sPass').value;
+  const err=(m)=>{ const e=document.getElementById('sErr'); e.style.display='block'; e.textContent=m; };
+  const human=(e)=>{
+    const c=String(e.code||e);
+    if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')) return 'Email ou mot de passe incorrect.';
+    if(c.includes('email-already-in-use')) return 'Ce compte existe déjà — utilisez « Se connecter ».';
+    if(c.includes('weak-password')) return 'Mot de passe trop court (6 caractères minimum).';
+    if(c.includes('invalid-email')) return 'Adresse email invalide.';
+    if(c.includes('network')) return 'Pas de connexion internet.';
+    return 'Erreur : '+c;
+  };
+  document.getElementById('sIn').onclick=async()=>{
+    try{ await fb.authMod.signInWithEmailAndPassword(fb.auth, mail(), pass()); A.closeModal(); A.toast('Connecté'); }
+    catch(e){ err(human(e)); }
+  };
+  document.getElementById('sUp').onclick=async()=>{
+    try{ await fb.authMod.createUserWithEmailAndPassword(fb.auth, mail(), pass()); A.closeModal(); A.toast('Compte créé'); }
+    catch(e){ err(human(e)); }
+  };
+}
+</script>
+
 </body>
 </html>
