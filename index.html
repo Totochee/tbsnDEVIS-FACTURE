@@ -345,17 +345,41 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
 </head>
 <body>
 <div class="access-gate" id="accessGate">
-  <form class="access-card" id="accessForm" autocomplete="off">
+  <div class="access-card" id="accessCard">
     <div class="access-brand">TBSN <span>groupe.</span></div>
-    <h2>Code d'entree</h2>
-    <p>Entrez le code pour acceder a l'application devis et factures.</p>
-    <div class="field">
-      <label for="accessCode">Code</label>
-      <input type="password" id="accessCode" inputmode="numeric" placeholder="------" autofocus>
+
+    <div id="gateLoading">
+      <h2>Connexion…</h2>
+      <p>Verification de votre session.</p>
     </div>
-    <button class="btn primary" type="submit">Acceder au site</button>
-    <div class="access-error" id="accessError" aria-live="polite"></div>
-  </form>
+
+    <div id="gateForm" style="display:none">
+      <h2>Connexion</h2>
+      <p>Connectez-vous pour acceder a vos devis et factures.</p>
+      <button class="btn" id="gGoogle" style="width:100%;justify-content:center;gap:10px;padding:12px"></button>
+      <div style="display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:11.5px">
+        <span style="flex:1;height:1px;background:var(--line)"></span>ou<span style="flex:1;height:1px;background:var(--line)"></span>
+      </div>
+      <form id="gMailForm" autocomplete="on">
+        <div class="field"><label for="gMail">Adresse email</label>
+          <input type="email" id="gMail" autocomplete="username"></div>
+        <div class="field"><label for="gPass">Mot de passe</label>
+          <input type="password" id="gPass" autocomplete="current-password"></div>
+        <button class="btn primary" type="submit" style="width:100%;justify-content:center">Se connecter</button>
+      </form>
+      <button class="btn" id="gSignup" style="width:100%;justify-content:center;margin-top:8px">Creer un compte</button>
+      <div class="access-error" id="accessError" aria-live="polite"></div>
+    </div>
+
+    <div id="gateOffline" style="display:none">
+      <h2>Hors ligne</h2>
+      <p>Impossible de joindre le service de connexion.</p>
+      <button class="btn primary" id="gOfflineOpen" style="width:100%;justify-content:center">Ouvrir en mode local</button>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6">
+        Vos donnees enregistrees sur cet appareil restent accessibles. La synchronisation reprendra au retour du reseau.
+      </div>
+    </div>
+  </div>
 </div>
 <div class="app locked" id="appRoot">
   <aside class="rail">
@@ -382,6 +406,7 @@ select.status-inline{padding:5px 10px;font-size:12px;font-weight:600;border-radi
       <button class="rf-btn" id="btnImport"></button>
       <button class="rf-btn" id="btnSync"></button>
       <button class="rf-btn" id="btnReset"></button>
+      <div id="appVersion" style="text-align:center;font-size:10px;color:#5E7091;letter-spacing:.06em;padding-top:4px"></div>
     </div>
   </aside>
 
@@ -547,7 +572,11 @@ window.__tbsn = {
   toast: (m)=>toast(m),
   openModal: (h)=>openModal(h),
   closeModal: ()=>closeModal(),
-  icons: ()=>I
+  icons: ()=>I,
+  unlockApp: ()=>unlockApp(),
+  lockApp: ()=>lockApp(),
+  showGate: (w)=>showGate(w),
+  gateError: (m)=>gateError(m)
 };
 
 /* ---------- Utilitaires ---------- */
@@ -1314,49 +1343,64 @@ function openResetModal(){
 }
 
 
-/* ---------- Code d'entree ---------- */
-const ENTRY_CODE = '195206'; // Changez ce code ici.
-const ACCESS_KEY = 'tbsn_access_ok';
+/* ---------- Portail d'acces ----------
+   Plus de code en dur : le source d'une page web est toujours lisible.
+   L'acces est verifie par Firebase Auth (serveurs Google) et les donnees
+   sont protegees par les regles Firestore. */
+const SEEN_KEY = 'tbsn_auth_seen';
+
 function unlockApp(){
-  sessionStorage.setItem(ACCESS_KEY,'1');
   document.getElementById('appRoot').classList.remove('locked');
   document.getElementById('accessGate').style.display='none';
   buildNav();
   go('dashboard');
 }
-function resetAccessForm(){
-  const input=document.getElementById('accessCode');
-  const error=document.getElementById('accessError');
-  if(error) error.textContent='';
-  if(input){
-    input.value='';
-    setTimeout(()=>input.focus(),30);
-  }
-}
-function logoutApp(){
-  sessionStorage.removeItem(ACCESS_KEY);
+function lockApp(){
   closeModal();
   VIEW='dashboard';
   document.getElementById('appRoot').classList.add('locked');
   document.getElementById('accessGate').style.display='flex';
-  resetAccessForm();
+  showGate('form');
+  gateError('');
+  const p=document.getElementById('gPass'); if(p) p.value='';
+}
+function showGate(which){
+  const map={loading:'gateLoading', form:'gateForm', offline:'gateOffline'};
+  Object.entries(map).forEach(([k,id])=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display = (k===which)?'block':'none';
+  });
+  if(which==='form') setTimeout(()=>{const m=document.getElementById('gMail'); if(m&&!m.value) m.focus();},40);
+}
+function gateError(msg){
+  const e=document.getElementById('accessError');
+  if(e) e.textContent=msg||'';
+}
+function logoutApp(){
+  if(window.TBSNAuth && window.TBSNAuth.signOut) window.TBSNAuth.signOut();
+  else { localStorage.removeItem(SEEN_KEY); lockApp(); }
 }
 function initAccessGate(){
-  const form=document.getElementById('accessForm');
-  const input=document.getElementById('accessCode');
-  const error=document.getElementById('accessError');
-  if(sessionStorage.getItem(ACCESS_KEY)==='1'){
-    unlockApp();
-    return;
-  }
-  form.addEventListener('submit',e=>{
-    e.preventDefault();
-    if(input.value.trim()===ENTRY_CODE){ unlockApp(); return; }
-    error.textContent='Code incorrect.';
-    input.value='';
-    input.focus();
-  });
+  showGate('loading');
+  // Repli si Firebase ne repond pas (reseau bloque) au bout de 8 secondes
+  setTimeout(()=>{
+    if(window.__gateHandled) return;
+    if(localStorage.getItem(SEEN_KEY)){
+      showGate('offline');
+      const b=document.getElementById('gOfflineOpen');
+      if(b) b.onclick=()=>unlockApp();
+    } else {
+      showGate('form');
+      gateError('Service de connexion injoignable. Verifiez votre connexion internet.');
+    }
+  }, 8000);
 }
+
+/* Numero de version : permet de verifier quelle version est reellement chargee. */
+const APP_VERSION='v6 · 10/07/2026';
+(function(){ const v=document.getElementById('appVersion'); if(v) v.textContent=APP_VERSION;
+  console.log('TBSN Devis & Factures — '+APP_VERSION); })();
+
 /* ---------- Menu « Plus » (mobile) : accès aux actions de la barre latérale ---------- */
 const ICON_MORE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>';
 (function initMore(){
@@ -1377,6 +1421,7 @@ function openMoreModal(){
       row('mExp',I.down,'Sauvegarder','Télécharger une copie de toutes vos données')+
       row('mImp',I.up,'Restaurer','Recharger une sauvegarde précédente')+
       row('mRst',I.trash,'Réinitialiser','Effacer les devis et factures',true)+
+      '<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">Version '+APP_VERSION+'</div>'+
     '</div>'+
     '<div class="modal-foot"><button class="btn" onclick="closeModal()">Fermer</button></div>'
   );
@@ -1443,6 +1488,11 @@ btn.onclick=openSyncModal;
 
 /* ---------- Démarrage ---------- */
 if(CONFIGURED) boot();
+else {
+  window.__gateHandled = true;
+  A.unlockApp();
+  console.warn('Firebase non configuré : accès local sans authentification.');
+}
 
 async function boot(){
   try{
@@ -1465,11 +1515,20 @@ async function boot(){
     catch(e){ console.error('Retour de redirection :', e); }
 
     authMod.onAuthStateChanged(auth, async (user)=>{
+      window.__gateHandled = true;
       fb.user = user;
       if(unsubscribe){ unsubscribe(); unsubscribe=null; }
-      if(user){ await afterSignIn(); }
-      else { status='local'; paintBtn(); }
+      if(user){
+        localStorage.setItem('tbsn_auth_seen','1');
+        A.unlockApp();          // <- l'application ne s'ouvre qu'ici
+        await afterSignIn();
+      } else {
+        status='local'; paintBtn();
+        A.lockApp();            // aucune session : porte fermee
+        wireGate();
+      }
     });
+    wireGate();
   }catch(e){
     console.error('Firebase indisponible :', e);
     status='error'; paintBtn();
@@ -1573,6 +1632,65 @@ async function pushNow(){
   }
 }
 window.TBSNSync={ onLocalChange, pushNow };
+window.TBSNAuth={
+  signOut: async ()=>{
+    try{ localStorage.removeItem('tbsn_auth_seen'); await fb.authMod.signOut(fb.auth); }
+    catch(e){ console.error(e); A.lockApp(); }
+  }
+};
+
+/* ---------- Ecran de connexion (portail) ---------- */
+const GLOGO_BTN='<svg viewBox="0 0 48 48" width="18" height="18" style="flex:none"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+let gateWired=false;
+function humanAuth(e){
+  const c=String(e.code||e);
+  if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')) return 'Email ou mot de passe incorrect.';
+  if(c.includes('email-already-in-use')) return 'Ce compte existe deja — utilisez « Se connecter ».';
+  if(c.includes('weak-password')) return 'Mot de passe trop court (6 caracteres minimum).';
+  if(c.includes('invalid-email')) return 'Adresse email invalide.';
+  if(c.includes('unauthorized-domain')) return 'Domaine non autorise dans Firebase > Authentication > Settings.';
+  if(c.includes('operation-not-allowed')) return 'Methode desactivee dans Firebase > Authentication.';
+  if(c.includes('too-many-requests')) return 'Trop de tentatives. Reessayez dans quelques minutes.';
+  if(c.includes('network')) return 'Pas de connexion internet.';
+  return 'Erreur : '+c;
+}
+function wireGate(){
+  if(gateWired || !fb) return;
+  const g=document.getElementById('gGoogle');
+  const f=document.getElementById('gMailForm');
+  const su=document.getElementById('gSignup');
+  if(!g||!f||!su) return;
+  gateWired=true;
+  g.innerHTML=GLOGO_BTN+'Continuer avec Google';
+  const mail=()=>document.getElementById('gMail').value.trim();
+  const pass=()=>document.getElementById('gPass').value;
+
+  g.onclick=async()=>{
+    A.gateError('');
+    const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = fb.authMod;
+    const provider=new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt:'select_account' });
+    try{ await signInWithPopup(fb.auth, provider); }
+    catch(e){
+      const c=String(e.code||e);
+      if(c.includes('popup-blocked')||c.includes('operation-not-supported')||c.includes('cancelled-popup-request')){
+        try{ await signInWithRedirect(fb.auth, provider); return; }catch(e2){ A.gateError(humanAuth(e2)); return; }
+      }
+      if(c.includes('popup-closed-by-user')) return;
+      A.gateError(humanAuth(e));
+    }
+  };
+  f.onsubmit=async(ev)=>{
+    ev.preventDefault(); A.gateError('');
+    try{ await fb.authMod.signInWithEmailAndPassword(fb.auth, mail(), pass()); }
+    catch(e){ A.gateError(humanAuth(e)); }
+  };
+  su.onclick=async()=>{
+    A.gateError('');
+    try{ await fb.authMod.createUserWithEmailAndPassword(fb.auth, mail(), pass()); }
+    catch(e){ A.gateError(humanAuth(e)); }
+  };
+}
 
 /* ---------- Fenêtre de synchronisation ---------- */
 function openSyncModal(){
